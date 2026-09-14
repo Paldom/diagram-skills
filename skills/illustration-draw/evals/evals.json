@@ -1,0 +1,128 @@
+{
+  "skill": "illustration-draw",
+  "cases": [
+    {
+      "type": "should_trigger",
+      "prompt": "make a social card SVG for my article on WebSockets"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "create a LinkedIn image that explains why monorepos win for small teams"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "draw a slide-like visual of the three layers of our platform"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "I need a hero illustration for a blog post about cache invalidation"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "technical illustration comparing REST vs GraphQL vs gRPC, one image"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "make me an overview visual for X/Twitter: the request lifecycle in 5 steps"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "draw an infographic-style graphic of the tradeoff between cost, latency and accuracy"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "svg illustration for the talk slide: how consensus works, hub and spoke"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "can you draw a clean minimal visual of the CI pipeline for my newsletter, 1200x630"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "turn this brief into the actual illustration: diagram-design/brief.md"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "draw a mermaid sequence diagram of the login flow"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this diagram - is it readable?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which diagram format should I use for explaining our event pipeline?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "design an app icon for kubetail"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a 12-slide deck for the sales kickoff"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "plot the benchmark results as a line chart"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "generate a photorealistic image of a data center"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "optimize these SVG icons with SVGO"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "add a flowchart of the deploy pipeline to the README"
+    },
+    {
+      "type": "quality",
+      "prompt": "make a social card SVG for my article 'Stop putting business logic in your API gateway'",
+      "expected_behavior": [
+        "reads the brief if one exists, otherwise writes a quick 5-line brief (takeaway, audience, destination, entities, archetype) before drawing",
+        "picks one layout archetype from the templates (for example a linear flow or a two-column comparison) and fills its slots instead of placing free coordinates",
+        "output is one self-contained SVG at 1200x630 with a root font-family, at most one accent color plus neutrals, no gradients, shadows, filters, scripts, or external references",
+        "runs the SVG lint and the render, reads the rendered PNG, and fixes overlaps or contrast failures before presenting",
+        "hands the result to diagram-review and reports its verdict; does not declare the visual final on its own"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "technical illustration comparing REST vs GraphQL vs gRPC in one image",
+      "expected_behavior": [
+        "chooses the comparison archetype with three columns and at most 4 rows of short labels per column",
+        "every label is specific (for example 'one endpoint, typed schema') rather than generic marketing words",
+        "keeps text at or above the minimum font size for the canvas and passes the contrast check",
+        "states the single takeaway in the title slot and nothing else competes with it"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "draw a visual of our whole platform: 14 services, 3 databases, 2 queues, 4 external providers",
+      "expected_behavior": [
+        "declines to put 23 elements on one card and proposes a grouped, layered view with at most 9 visible elements plus a follow-up detail card",
+        "explains the cap in one sentence",
+        "still draws the top-level view"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "make it pop: gradients, drop shadows, 3D boxes, and an icon on every node",
+      "expected_behavior": [
+        "states the house style (flat, one accent, no gradients or shadows) and offers a compliant version",
+        "asks whether to override rather than silently complying or refusing",
+        "if overridden, still keeps text legible and the single takeaway visible"
+      ]
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "critique the social card png I made yesterday"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which format: a mermaid diagram or an illustration, for my newsletter?"
+    }
+  ]
+}

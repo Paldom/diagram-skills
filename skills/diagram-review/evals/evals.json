@@ -1,0 +1,137 @@
+{
+  "skill": "diagram-review",
+  "cases": [
+    {
+      "type": "should_trigger",
+      "prompt": "review this diagram - is it readable?"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "critique the architecture diagram in docs/arch.svg"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "is this mermaid flowchart too busy? check it"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "does this look like AI slop? diagram-design/candidates/1-flow.svg"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "rate my sequence diagram for clarity"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "check the social card png before I post it - anything unreadable?"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "fix the overlapping labels in this svg illustration"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "run the diagram lint on README.md mermaid blocks"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "compare these two visuals and tell me which one is neater"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "can u check if the contrast on this diagram is ok"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "draw a mermaid sequence diagram of the login flow"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a social card SVG for my article on WebSockets"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which diagram format should I use for explaining our event pipeline?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review my icon - does it still read at 16px?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this PR for bugs"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "check the accessibility of our landing page"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "is this chart's y-axis misleading? it starts at 50%"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "lint the python scripts in this repo"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "convert this svg to png"
+    },
+    {
+      "type": "quality",
+      "prompt": "review docs/arch.svg - is it readable?",
+      "expected_behavior": [
+        "runs the SVG lint script first and reports each error and warning with the element it points at",
+        "renders the SVG to PNG with the render script (or reports which renderer to install and stops if none exists) and reads the PNG",
+        "does the analyze step before judging: transcribes every visible text, counts nodes and edges, then applies the binary checklist",
+        "returns a verdict of PASS, FIX (with targeted edits listed), or REDRAW, each finding grounded in something visible",
+        "does not edit the file unless asked to fix; when asked, writes a revision next to the original rather than overwriting"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "is this mermaid flowchart too busy? (a 26-node flowchart pasted inline)",
+      "expected_behavior": [
+        "runs the mermaid lint and reports node and edge counts against the cap",
+        "flags unquoted labels, a lowercase end node, or missing config pin if present",
+        "recommends REDRAW with a concrete split (which nodes go to which view) rather than a vague 'simplify'"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "check the social card png before I post it",
+      "expected_behavior": [
+        "reads the PNG, transcribes the text, and checks the single takeaway is visible at a glance",
+        "notes text that would be unreadable at feed size and contrast that looks low, stated as visible facts",
+        "says plainly when a check cannot be done on a raster (no lint possible) and what it did instead"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "compare these two visuals and tell me which one is neater",
+      "expected_behavior": [
+        "ranks the candidates rather than assigning absolute scores, and says the ranking is advisory",
+        "grounds each ranking reason in a visible fact (crossing edges, label overlap, more than one accent color)",
+        "leaves the final pick to the human and never deletes a candidate"
+      ]
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "review this mermaid social card svg before I post it"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "check my flowchart against the brief - did it get the direction right?"
+    },
+    {
+      "type": "quality",
+      "prompt": "check docs/cache.mmd against diagram-design/brief.md (the brief says the cache sits in front of the database; the diagram draws database -> cache)",
+      "expected_behavior": [
+        "runs the analyze pass first and transcribes the labels and the arrow direction it actually sees",
+        "reports a fidelity failure of type direction, citing the reversed edge",
+        "returns FIX with the exact edge to flip when that is the only mismatch, or REDRAW if more entities are wrong",
+        "does not pass the diagram because the syntax is valid"
+      ]
+    }
+  ]
+}

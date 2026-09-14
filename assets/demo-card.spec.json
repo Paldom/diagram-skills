@@ -1,0 +1,29 @@
+{
+  "archetype": "compare",
+  "canvas": "social",
+  "theme": "light",
+  "accent": "#2563EB",
+  "title": "Your gateway should only do three things",
+  "subtitle": "Business logic drifts up to the edge. Move it back down.",
+  "footer": "",
+  "columns": [
+    {
+      "heading": "API gateway",
+      "rows": [
+        "Authentication",
+        "Rate limiting",
+        "Routing"
+      ],
+      "accent": true
+    },
+    {
+      "heading": "Domain services",
+      "rows": [
+        "Pricing rules",
+        "Orchestration",
+        "Response shaping"
+      ],
+      "accent": false
+    }
+  ]
+}

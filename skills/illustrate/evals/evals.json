@@ -1,0 +1,41 @@
+{
+  "skill": "illustrate",
+  "cases": [
+    {
+      "type": "quality",
+      "prompt": "/illustrate Why your cache invalidation strategy is wrong",
+      "expected_behavior": [
+        "runs diagram-brief first and states the takeaway, destination, and chosen format before drawing",
+        "dispatches to mermaid-draw or illustration-draw according to the brief, in a subagent (fork or acpx) rather than inline",
+        "runs diagram-review on the result and fixes findings for at most 3 iterations",
+        "returns the file paths, the review verdict, and the brief's assumptions; does not commit or push"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "/illustrate diagram of the request flow in this repo for the README",
+      "expected_behavior": [
+        "routes to mermaid-draw because the destination is a Markdown README",
+        "the Mermaid source is validated before it is presented",
+        "the review verdict is reported with any residual findings"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "/illustrate LinkedIn visual: monorepos win for small teams. My take: tooling cost dominates below 20 engineers",
+      "expected_behavior": [
+        "routes to illustration-draw with a social card size",
+        "the personal take becomes the title takeaway, not a footnote",
+        "the rendered PNG is checked before the result is returned"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "/illustrate a full brand illustration with characters and a 3D scene for our product launch",
+      "expected_behavior": [
+        "recognizes this is beyond a minimalist technical diagram and recommends the design-tool handoff (Claude Design or FigJam) with a paste-ready brief",
+        "does not attempt to draw characters or 3D scenes as SVG"
+      ]
+    }
+  ]
+}

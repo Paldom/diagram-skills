@@ -1,0 +1,31 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Start here",
+      "description": "One command from a title to a reviewed visual: /illustrate briefs the idea, routes it to Mermaid or a slide-like SVG, draws it in a subagent, and reviews the result.",
+      "skills": ["illustrate"]
+    },
+    {
+      "title": "Brief and route",
+      "description": "Turns a title, notes, or a hot take into a one-page brief with the single takeaway and the format that the destination can actually show.",
+      "skills": ["diagram-brief"]
+    },
+    {
+      "title": "Diagrams-as-code",
+      "description": "Mermaid and DOT that render on the first try and still read as a diagram: pinned config, quoted labels, a node cap, lint, validate, render.",
+      "skills": ["mermaid-draw"]
+    },
+    {
+      "title": "Slide-like illustrations",
+      "description": "Social cards, article heroes, and slide visuals compiled from a small JSON spec onto a fixed grid, so the model never places a coordinate.",
+      "skills": ["illustration-draw"]
+    },
+    {
+      "title": "Review",
+      "description": "Deterministic lints, a feed-size render, and an analyze-then-judge checklist that returns PASS, FIX, or REDRAW instead of a vibe.",
+      "skills": ["diagram-review"]
+    }
+  ]
+}

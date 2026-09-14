@@ -1,0 +1,128 @@
+{
+  "skill": "mermaid-draw",
+  "cases": [
+    {
+      "type": "should_trigger",
+      "prompt": "draw a mermaid sequence diagram of the login flow"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "add a flowchart of the deploy pipeline to the README"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "make an ER diagram for the orders schema in mermaid"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "state machine diagram for the payment states pls"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "can u put a mermaid diagram of the module dependencies in docs/architecture.md"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "diagram the request flow between the gateway, auth service and the queue for this PR description"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "graphviz dot graph of the package dependency tree"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "sequence diagram: client -> api -> db with retries, for the docs page"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "mermaid class diagram of the plugin system"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "this mermaid flowchart looks like arrow soup, redraw it cleanly with fewer nodes"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a social card SVG for my article on WebSockets"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this diagram - is it readable?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which diagram format should I use for explaining our event pipeline?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "generate a FigJam diagram from this mermaid code"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a bar chart of the latency numbers in results.csv"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "create a slide deck about the architecture"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "design an app icon for our CLI"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "why does github not render my mermaid block? it shows raw text"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "install the mermaid cli globally"
+    },
+    {
+      "type": "quality",
+      "prompt": "add a mermaid flowchart of the deploy pipeline to the README",
+      "expected_behavior": [
+        "writes a 3-line brief first (takeaway, audience, destination) and keeps the diagram to at most 12 nodes, splitting into two views if the pipeline has more",
+        "uses flowchart (not graph), alphanumeric node ids, every label with punctuation in double quotes, no lowercase end node, and a pinned config frontmatter (theme, look, layout)",
+        "includes accTitle and accDescr and at most one accent color via classDef, no per-node rainbow styling",
+        "runs the lint and, if available, the render step and feeds errors back, stopping after 3 repair turns and resampling instead of looping",
+        "runs diagram-review on the result before presenting it and reports the verdict"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "sequence diagram of checkout: browser, api, payment provider, db, email service, fraud check, warehouse, analytics, with retries and timeouts",
+      "expected_behavior": [
+        "notices the participant count is high and proposes cutting to the participants needed for the takeaway or splitting into two diagrams",
+        "labels messages with specific verbs and payloads, never generic labels like 'calls' or 'connects to'",
+        "shows the retry and timeout paths with alt/loop blocks only where they matter for the point being made",
+        "validates the syntax before presenting the diagram"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "graphviz dot graph of the package dependency tree in this repo",
+      "expected_behavior": [
+        "extracts the dependency edges from the manifest or import statements rather than inventing them",
+        "emits DOT with rankdir and a single accent for the highlighted path, and renders with dot if installed, otherwise says so and provides the source",
+        "flags when the graph is a hairball (more than about 20 nodes) and offers a pruned view"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "mermaid diagram of our architecture: 30 services",
+      "expected_behavior": [
+        "refuses to put 30 nodes in one diagram and proposes a container-level view with grouped subgraphs plus per-domain detail views",
+        "explains the node cap in one sentence rather than lecturing",
+        "still produces the top-level view"
+      ]
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this mermaid social card svg before I post it"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "mermaid or svg? which format for explaining the auth flow to executives"
+    }
+  ]
+}
