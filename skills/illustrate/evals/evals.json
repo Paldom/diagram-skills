@@ -36,6 +36,16 @@
         "recognizes this is beyond a minimalist technical diagram and recommends the design-tool handoff (Claude Design or FigJam) with a paste-ready brief",
         "does not attempt to draw characters or 3D scenes as SVG"
       ]
+    },
+    {
+      "type": "quality",
+      "prompt": "/illustrate animated GIF for LinkedIn: our request path crosses six services before billing, use ./design-system.md",
+      "expected_behavior": [
+        "routes to illustration-draw with a wide canvas so the pipeline preset can pan",
+        "passes ./design-system.md to the compiler and to diagram-animate",
+        "runs diagram-animate only after the static SVG passed review, and inspects early, middle and last frames",
+        "reports the SVG, PNG, GIF/MP4 paths and the design system used; does not commit or push"
+      ]
     }
   ]
 }

@@ -15,6 +15,10 @@
     },
     {
       "type": "should_trigger",
+      "prompt": "draw an explainer of how our pipeline answers a question: the JSON in, the model, the JSON out, the query and the rendered dashboard, with latencies"
+    },
+    {
+      "type": "should_trigger",
       "prompt": "I need a hero illustration for a blog post about cache invalidation"
     },
     {
@@ -83,7 +87,7 @@
       "expected_behavior": [
         "reads the brief if one exists, otherwise writes a quick 5-line brief (takeaway, audience, destination, entities, archetype) before drawing",
         "picks one layout archetype from the templates (for example a linear flow or a two-column comparison) and fills its slots instead of placing free coordinates",
-        "output is one self-contained SVG at 1200x630 with a root font-family, at most one accent color plus neutrals, no gradients, shadows, filters, scripts, or external references",
+        "output is one self-contained SVG at 1200x627 with a root font-family, at most one accent color plus neutrals, no gradients, shadows, filters, scripts, or external references",
         "runs the SVG lint and the render, reads the rendered PNG, and fixes overlaps or contrast failures before presenting",
         "hands the result to diagram-review and reports its verdict; does not declare the visual final on its own"
       ]
@@ -95,7 +99,7 @@
         "chooses the comparison archetype with three columns and at most 4 rows of short labels per column",
         "every label is specific (for example 'one endpoint, typed schema') rather than generic marketing words",
         "keeps text at or above the minimum font size for the canvas and passes the contrast check",
-        "states the single takeaway in the title slot and nothing else competes with it"
+        "states the single takeaway as the title (the SVG <title> and alt text; drawn only with show_title for a slide or social card) and nothing else competes with it"
       ]
     },
     {
@@ -123,6 +127,24 @@
     {
       "type": "should_not_trigger",
       "prompt": "which format: a mermaid diagram or an illustration, for my newsletter?"
+    },
+    {
+      "type": "quality",
+      "prompt": "make a static explainer of the question → model → SQL → dashboard pipeline with the real JSON payloads and latencies, then animate it",
+      "expected_behavior": [
+        "uses pipeline_svg.py with columns of code panels, processor boxes and a timing bar, not a generic flow card",
+        "puts callouts on the tokens that matter and keeps payloads verbatim from the user's material",
+        "lints with --diagram and a raised word cap, and animates with diagram-animate --preset pipeline"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "I need an inline figure for my blog post showing how a schema change ships: edit, composition check, breaking-change check, hot reload",
+      "expected_behavior": [
+        "compiles a flow without a drawn title (inline default) because the article's heading carries it, while the SVG still has <title> and <desc> with the takeaway",
+        "hands over the takeaway as alt text / caption for the article",
+        "does not add slide devices (title, takeaway bar, footer handle) unless asked"
+      ]
     }
   ]
 }

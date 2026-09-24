@@ -8,12 +8,24 @@ and does not overlap other text, and WCAG AA contrast for every text run.
 WARNs are house guidance: one accent color, a word budget, a shape budget,
 font-size floors, `<title>`/`<desc>` for accessibility.
 
+Design-system aware: when the SVG carries `data-design-system` (every renderer
+in these skills sets it) or --design-system is given, the tokens are loaded and
+(1) the one sanctioned effect is allowed — `<filter data-ds="neumorph">` made
+only of `<feDropShadow>` with blur <= 5 px — every other filter stays an error;
+(2) the design system's neutrals do not count as accent hues; (3) the accent is
+a highlighter: using it as a text fill or a stroke is an error; (4) colours
+outside the palette are warned. `--diagram` switches the font floor from
+feed-relative to absolute (11 px error, 13 px warn) and raises the shape budget,
+for architecture diagrams read at full size. Lint the static SVG, not the
+animated one (the camera track is wider than the frame by design).
+
 Text geometry is estimated from character counts (0.55 em per glyph, 0.6 em
 bold) — good enough to catch collisions and overflow, never a substitute for
 looking at the render. Pure stdlib. Exit 1 on any ERROR (or WARN with --strict).
 
 Usage:
     python3 svg_lint.py FILE.svg [--max-words 70] [--max-shapes 40] [--strict]
+                        [--diagram] [--design-system PATH]
     python3 svg_lint.py --self-test
 
 Output: `ERROR:`/`WARN:` lines, a `STATS ...` line, then `OK:`/`FAIL:`.
@@ -28,6 +40,9 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import design_tokens as dt
 
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
@@ -52,13 +67,14 @@ ALLOWED = {
     "marker",
     "symbol",
     "style",
+    "filter",  # only the design system's neumorph lift; checked in neumorph_ok()
+    "feDropShadow",
 }
 SHAPES = {"rect", "circle", "ellipse", "line", "polyline", "polygon", "path"}
 BANNED_HINT = {
     "script": "active content",
     "image": "raster or external image",
     "foreignObject": "embedded HTML",
-    "filter": "drop shadows / blur (chartjunk)",
     "linearGradient": "gradients (house style is flat)",
     "radialGradient": "gradients (house style is flat)",
     "pattern": "patterns",
@@ -82,7 +98,9 @@ CANVAS_PRESETS = {
 MAX_WORDS = 70
 MAX_SHAPES = 40
 MIN_FONT_PCT_ERR = 1.15  # % of viewBox WIDTH (feeds fit width): 14px on a 1200-wide card
-MIN_FONT_PCT_WARN = 1.5  # 18px on a 1200-wide card, 24px on a 1600-wide slide
+# 16px on a 1200-wide card: small uppercase secondary labels (step numbers, dates, axes)
+# sit here in every reviewed card system; body text stays well above it
+MIN_FONT_PCT_WARN = 1.3
 OVERLAP_FRACTION = 0.05  # of the smaller text box
 NAMED_COLORS = {
     "black": (0, 0, 0),
@@ -210,7 +228,7 @@ def translate_of(el: ET.Element, parents: dict) -> tuple[float, float]:
                 ty += float(m.group(2) or 0)
             other = re.search(r"(scale|matrix|skew)\s*\(", t)
             odd_rot = re.search(r"rotate\s*\(", t) and not re.search(r"rotate\(\s*-?90\b", t)
-            if other or odd_rot:
+            if (other or odd_rot) and node.get("class") != "icon":
                 warn(f"transform {t!r} on <{local(node.tag)}> is not evaluated (only translate is)")
         node = parents.get(node)
     return tx, ty
@@ -292,8 +310,16 @@ def text_runs(root: ET.Element, parents: dict) -> list[dict]:
         left = x - width if anchor == "end" else x - width / 2 if anchor == "middle" else x
         top = min(yy for _, yy in lines) - 0.8 * fs
         bottom = max(yy for _, yy in lines) + 0.25 * fs
-        if rotated:  # vertical label: the run extends along y, not x
-            left, top, width, bottom = x - fs * 0.8, y - width, fs * 1.05, y
+        if (
+            rotated
+        ):  # vertical label: the run extends along y, not x (up, or down when end-anchored)
+            span = width
+            if anchor == "end":
+                left, top, width, bottom = x - fs * 0.8, y, fs * 1.05, y + span
+            elif anchor == "middle":
+                left, top, width, bottom = x - fs * 0.8, y - span / 2, fs * 1.05, y + span / 2
+            else:
+                left, top, width, bottom = x - fs * 0.8, y - span, fs * 1.05, y
         runs.append(
             {
                 "el": t,
@@ -318,7 +344,39 @@ def area(b) -> float:
     return max(b[2] - b[0], 0) * max(b[3] - b[1], 0)
 
 
-def check(path: Path, max_words: int, max_shapes: int) -> None:
+def hexrgb(h: str) -> tuple[int, int, int]:
+    return tuple(int(h[i : i + 2], 16) for i in (1, 3, 5))  # type: ignore[return-value]
+
+
+def neumorph_ok(f: ET.Element) -> str | None:
+    """None if `f` is the design system's lift filter, else why not."""
+    kind = f.get("data-ds")
+    if kind not in ("neumorph", "soft"):
+        return 'only the design system\'s <filter data-ds="neumorph|soft"> elevation is allowed'
+    kids = list(f)
+    limit = 2 if kind == "neumorph" else 1
+    if not kids or any(local(k.tag) != "feDropShadow" for k in kids) or len(kids) > limit:
+        return f"the {kind} filter may hold only {limit} <feDropShadow>"
+    for k in kids:
+        try:
+            blur = float(k.get("stdDeviation", "0"))
+            alpha = float(k.get("flood-opacity", "1"))
+        except ValueError:
+            return "unparseable stdDeviation or flood-opacity"
+        if kind == "neumorph" and blur > 2.5:
+            return "neumorph blur is over 5 px — the lift must stay subtle"
+        if kind == "soft" and (blur > 12 or alpha > 0.15):
+            return "soft shadow over 24 px blur or 15% opacity — elevation, not a glow"
+    return None
+
+
+def check(
+    path: Path,
+    max_words: int,
+    max_shapes: int,
+    diagram: bool = False,
+    ds_path: str | None = None,
+) -> None:
     raw = path.read_text(encoding="utf-8", errors="replace")
     if re.search(r"<!DOCTYPE|<!ENTITY", raw, re.I):
         err("DOCTYPE/ENTITY declarations are not allowed (XML expansion attacks); remove them")
@@ -334,11 +392,38 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
         err(f"root element is <{local(root.tag)}>, expected <svg>")
         return
     parents = {c: p for p in root.iter() for c in p}
+    tokens = None
+    if ds_path or root.get("data-design-system"):
+        named = root.get("data-design-system")
+        try:
+            tokens = dt.load(ds_path)
+            if (
+                not ds_path
+                and named
+                and named != tokens["name"]
+                and named in (*dt.list_themes(), "studio")
+            ):
+                tokens = dt.load(named)  # the SVG names a theme this machine can resolve
+        except dt.TokenError as exc:
+            err(f"design system: {exc}")
+            return
+        named = root.get("data-design-system")
+        if named and named != tokens["name"]:
+            warn(
+                f"SVG was built with design system {named!r} but linting against {tokens['name']!r} "
+                "— pass the same --design-system"
+            )
+    filters = {f.get("id"): neumorph_ok(f) for f in root.iter() if local(f.tag) == "filter"}
+    for fid, why in filters.items():
+        if why:
+            err(f"<filter id={fid!r}>: {why}")
 
     # --- safe subset ---
     shapes = 0
     for el in root.iter():
         tag = local(el.tag)
+        if tag == "feDropShadow" and local(parents.get(el, root).tag) != "filter":
+            err("<feDropShadow> outside a <filter>")
         if tag not in ALLOWED:
             why = BANNED_HINT.get(tag, "outside the safe static subset")
             err(f"<{tag}> is not allowed — {why}")
@@ -355,7 +440,9 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
                     f"{a}={value!r} on <{tag}> references a paint server — gradients/patterns are off"
                 )
             if a == "filter":
-                err(f"filter on <{tag}> — no shadows or blur")
+                m = re.fullmatch(r"url\(#([^)]+)\)", value.strip())
+                if not m or m.group(1) not in filters:
+                    err(f"filter on <{tag}> — no shadows or blur")
             if a == "style" and (DANGEROUS_CSS.search(value) or "filter" in value):
                 err(f"style {value[:60]!r} on <{tag}> uses url()/@import/filter — not allowed")
         if tag == "style":
@@ -381,7 +468,9 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
         err(f"viewBox {vb!r} has a non-positive size")
         return
     key = (round(vw), round(vh))
-    if key not in CANVAS_PRESETS:
+    if (
+        key not in CANVAS_PRESETS and not diagram and root.get("data-inline") != "1"
+    ):  # inline figures fit content
         warn(
             f"canvas {key[0]}x{key[1]} is not a delivery preset "
             f"({', '.join(f'{w}x{h}' for w, h in CANVAS_PRESETS)})"
@@ -397,8 +486,14 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
     # --- background + shapes for contrast lookups ---
     canvas_bg = (255, 255, 255)
     rects = []
+    hidden = {  # geometry that is never painted: clip paths, markers, defs
+        d
+        for g in root.iter()
+        if local(g.tag) in ("clipPath", "defs", "marker", "symbol", "mask")
+        for d in g.iter()
+    }
     for el in root.iter():
-        if local(el.tag) in ("rect", "circle", "ellipse"):
+        if local(el.tag) in ("rect", "circle", "ellipse") and el not in hidden:
             bb = rect_bbox(el, parents)
             fill = parse_color(prop(el, "fill", parents) or "black")
             if bb and fill:
@@ -429,7 +524,14 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
             warn(f"text {snippet!r}: font-size could not be resolved (unit?) — set px")
         else:
             pct = r["size"] / vw * 100
-            if pct < MIN_FONT_PCT_ERR:
+            if diagram:
+                if r["size"] < 11:
+                    err(f"text {snippet!r} is {r['size']:.0f}px — below the 11px floor")
+                elif r["size"] < (tokens["type"]["small-size"] if tokens else 13):
+                    warn(
+                        f"text {snippet!r} is {r['size']:.0f}px — small; keep it for secondary text"
+                    )
+            elif pct < MIN_FONT_PCT_ERR:
                 err(
                     f"text {snippet!r} is {r['size']:.0f}px = {pct:.2f}% of canvas width "
                     f"(min {MIN_FONT_PCT_ERR}% = {vw * MIN_FONT_PCT_ERR / 100:.0f}px) — unreadable at feed size"
@@ -474,7 +576,11 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
                     f"(needs {need}:1, WCAG 2.2 SC 1.4.3)"
                 )
     for i, a in enumerate(runs):
+        if a["el"].get("data-role") == "token":  # an intentional overprint of its own code token
+            continue
         for b in runs[i + 1 :]:
+            if b["el"].get("data-role") == "token":
+                continue
             ov = overlap_area(a["bbox"], b["bbox"])
             smaller = min(area(a["bbox"]), area(b["bbox"])) or 1.0
             if ov / smaller > OVERLAP_FRACTION:
@@ -488,6 +594,8 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
         )
     elif words > max_words:
         warn(f"{words} words > {max_words} — cut labels to the ones that carry the takeaway")
+    if diagram:
+        max_shapes *= 2
     if shapes > 2 * max_shapes:
         err(f"{shapes} shapes (cap {max_shapes}) — too dense to read")
     elif shapes > max_shapes:
@@ -497,6 +605,22 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
     accents: dict[int, tuple[int, int, int]] = {}
     colors: set[tuple[int, int, int]] = set()
     stroke_widths: set[str] = set()
+    palette: set[tuple[int, int, int]] = set()
+    token_neutral: set[tuple[int, int, int]] = set()
+    accent_rgb = None
+    if tokens:
+        tc = tokens["color"]
+        palette = {hexrgb(v) for v in tc.values()} | {(255, 255, 255)}
+        token_neutral = palette - {hexrgb(tc["accent"]), hexrgb(tc["signal"])}
+        # an inverted highlight (accent == ink/line, e.g. paper-line, coral) is not a highlighter hue
+        structural = {tc[k].upper() for k in ("ink", "line", "muted", "badge", "pill", "border")}
+        accent_rgb = None if tc["accent"].upper() in structural else hexrgb(tc["accent"])
+    in_icon = {  # icons and arrowheads have their own scaled strokes
+        d
+        for g in root.iter()
+        if g.get("class") == "icon" or local(g.tag) == "marker"
+        for d in g.iter()
+    }
     for el in root.iter():
         if local(el.tag) not in SHAPES | {"text"}:
             continue
@@ -504,16 +628,35 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
             c = parse_color(prop(el, name, parents))
             if c:
                 colors.add(c)
-                if not is_neutral(c):
+                if not is_neutral(c) and c not in token_neutral:
                     accents.setdefault(hue_bucket(c), c)
+                if accent_rgb and c == accent_rgb and (name == "stroke" or local(el.tag) == "text"):
+                    err(
+                        f"the accent {tokens['color']['accent']} is used as a {name} on "
+                        f"<{local(el.tag)}> — it is a highlighter fill behind ink, never text or line"
+                    )
         sw = prop(el, "stroke-width", parents)
-        if sw and local(el.tag) in SHAPES and parse_color(prop(el, "stroke", parents)):
+        if (
+            sw
+            and el not in in_icon
+            and local(el.tag) in SHAPES
+            and parse_color(prop(el, "stroke", parents))
+        ):
             stroke_widths.add(sw)
+    if palette:
+        off = sorted(c for c in colors if c not in palette)
+        if off:
+            warn(
+                f"{len(off)} colour(s) outside design system {tokens['name']!r}: "
+                + ", ".join(f"#{r:02X}{g:02X}{b:02X}" for r, g, b in off[:5])
+            )
     for el in root.iter():
         if local(el.tag) not in ("rect", "circle", "ellipse", "path", "polygon"):
             continue
         stroke = parse_color(prop(el, "stroke", parents))
         fill = parse_color(prop(el, "fill", parents) or "black")
+        if stroke in token_neutral:
+            continue  # token borders were contrast-checked when the design system loaded
         if stroke and fill and contrast(stroke, fill) < 3.0 and contrast(stroke, canvas_bg) < 3.0:
             warn(
                 f"<{local(el.tag)}> border {prop(el, 'stroke', parents)} is under 3:1 against both its fill "
@@ -526,7 +669,7 @@ def check(path: Path, max_words: int, max_shapes: int) -> None:
         warn(
             f"2 accent hues {sorted(accents.values())} — one is the house rule; keep the second only if it encodes meaning"
         )
-    if len(colors) > 6:
+    if len(colors) > 6 and not palette:
         warn(f"{len(colors)} distinct colors — palette is neutrals + one accent")
     if len(stroke_widths) > 2:
         warn(f"{len(stroke_widths)} stroke widths {sorted(stroke_widths)} — use one, two at most")
@@ -591,6 +734,27 @@ def self_test() -> int:
         check(good, MAX_WORDS, MAX_SHAPES)
         assert not errors, errors
         assert not warnings, warnings
+        ds = Path(td) / "ds.svg"  # the design-system contract: lift allowed, accent never a line
+        ds.write_text(
+            GOOD_SVG.replace(
+                "<title>",
+                '<defs><filter id="ds-lift" data-ds="neumorph">'
+                '<feDropShadow dx="2" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".07"/>'
+                "</filter></defs><title>",
+            )
+            .replace('rx="8" fill="#ffffff"', 'rx="8" fill="#ffffff" filter="url(#ds-lift)"', 1)
+            .replace('stroke="#2563eb"', 'stroke="#FFE27A"'),
+            encoding="utf-8",
+        )
+        errors, warnings = [], []
+        ds.write_text(ds.read_text().replace("<svg ", '<svg data-design-system="studio" ', 1))
+        check(ds, MAX_WORDS, MAX_SHAPES)
+        assert any("highlighter" in e for e in errors), errors
+        assert not any("<filter" in e or "filter on" in e for e in errors), errors
+        errors, warnings = [], []
+        ds.write_text(ds.read_text().replace('stdDeviation="2.5"', 'stdDeviation="9"'))
+        check(ds, MAX_WORDS, MAX_SHAPES)
+        assert any("over 5 px" in e for e in errors), errors
     assert abs(contrast((255, 255, 255), (0, 0, 0)) - 21.0) < 0.01
     assert abs(contrast((0x25, 0x63, 0xEB), (255, 255, 255)) - 5.17) < 0.05
     print("OK: self-test passed")
@@ -605,6 +769,8 @@ def main() -> int:
     ap.add_argument("--max-words", type=int, default=MAX_WORDS)
     ap.add_argument("--max-shapes", type=int, default=MAX_SHAPES)
     ap.add_argument("--strict", action="store_true", help="warnings fail too")
+    ap.add_argument("--diagram", action="store_true", help="full-size diagram: absolute font floor")
+    ap.add_argument("--design-system", default=None, help="lint against this design system")
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
@@ -614,7 +780,7 @@ def main() -> int:
     if not args.file.is_file():
         print(f"ERROR: no such file: {args.file}", file=sys.stderr)
         return 1
-    check(args.file, args.max_words, args.max_shapes)
+    check(args.file, args.max_words, args.max_shapes, args.diagram, args.design_system)
     for line in errors + warnings:
         print(line, file=sys.stderr)
     failed = len(errors) + (len(warnings) if args.strict else 0)

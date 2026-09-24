@@ -5,27 +5,51 @@
     {
       "title": "Start here",
       "description": "One command from a title to a reviewed visual: /illustrate briefs the idea, routes it to Mermaid or a slide-like SVG, draws it in a subagent, and reviews the result.",
-      "skills": ["illustrate"]
+      "skills": [
+        "illustrate"
+      ]
     },
     {
       "title": "Brief and route",
       "description": "Turns a title, notes, or a hot take into a one-page brief with the single takeaway and the format that the destination can actually show.",
-      "skills": ["diagram-brief"]
+      "skills": [
+        "diagram-brief"
+      ]
     },
     {
       "title": "Diagrams-as-code",
       "description": "Mermaid and DOT that render on the first try and still read as a diagram: pinned config, quoted labels, a node cap, lint, validate, render.",
-      "skills": ["mermaid-draw"]
+      "skills": [
+        "mermaid-draw"
+      ]
     },
     {
       "title": "Slide-like illustrations",
       "description": "Social cards, article heroes, and slide visuals compiled from a small JSON spec onto a fixed grid, so the model never places a coordinate.",
-      "skills": ["illustration-draw"]
+      "skills": [
+        "illustration-draw"
+      ]
+    },
+    {
+      "title": "Design system",
+      "description": "One design-system.md styles every diagram, card, icon and animation; derive it from a moodboard, switch themes, and check contrast.",
+      "skills": [
+        "diagram-design-system"
+      ]
+    },
+    {
+      "title": "Animation",
+      "description": "Turns a finished diagram into an explainer GIF, MP4, or animated SVG: reveal in reading order, connectors that draw, and a camera pan for pipelines.",
+      "skills": [
+        "diagram-animate"
+      ]
     },
     {
       "title": "Review",
       "description": "Deterministic lints, a feed-size render, and an analyze-then-judge checklist that returns PASS, FIX, or REDRAW instead of a vibe.",
-      "skills": ["diagram-review"]
+      "skills": [
+        "diagram-review"
+      ]
     }
   ]
 }

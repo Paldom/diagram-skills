@@ -44,7 +44,9 @@ and a deterministic loop around it, inside one fixed budget.
    (see `references/mermaid-gotchas.md`). Layers → `flowchart TB` with subgraphs.
 3. **Write the source** from the template in `references/mermaid-gotchas.md`:
    the `config:` frontmatter pin (`theme: base`, `look: classic`, `layout: dagre`,
-   ink/paper `themeVariables`), `accTitle`/`accDescr`, alphanumeric ids, every
+   and the design system's `themeVariables` — print them with
+   `python3 "${CLAUDE_SKILL_DIR}/scripts/render_themed.py" --config`, so
+   GitHub's own renderer matches the exported images), `accTitle`/`accDescr`, alphanumeric ids, every
    label with punctuation in double quotes, specific edge labels (verb +
    payload), ≤ 12 nodes / 20 edges, one `classDef accent` on the element that
    carries the takeaway. Split into two diagrams rather than exceed the cap.
@@ -63,13 +65,27 @@ and a deterministic loop around it, inside one fixed budget.
    pass through maid unvalidated — say "unvalidated" for them. Running npx
    downloads the pinned package once; skip it if the user has not allowed
    network access.
-6. **Render and look** when `mmdc` is installed (or with `--allow-download` for
-   the pinned mermaid-cli):
+6. **Render in the design system and look.** For an exported image (docs site,
+   slide, post) render with beautiful-mermaid (flowchart, state, sequence,
+   class, ER) — cleaner than mmdc, themed from the design system (palette,
+   font, radius, border, lift), no web-font fetch; DOT goes through Graphviz
+   with the design system's defaults (rounded borderless cards, muted edge
+   labels, orthogonal routing unless edges carry labels):
 
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/../diagram-review/scripts/render.py" diagram.mmd
+   python3 "${CLAUDE_SKILL_DIR}/scripts/render_themed.py" diagram.mmd --png [--design-system design-system.md]
+   python3 "${CLAUDE_SKILL_DIR}/scripts/render_themed.py" graph.dot --out graph.png
    ```
 
+   `--canvas social|square|wide` centres the SVG on 1200×627, 1080×1080 or
+   1920×1080 and warns when text drops under 12 px there.
+
+   The first Mermaid render needs `--allow-install` (pinned `npm ci
+   --ignore-scripts` of beautiful-mermaid + puppeteer-core into
+   `~/.cache/diagram-skills/`; ask first). The SVG styles itself with CSS
+   variables, so the PNG is rasterized in the system Chrome. For a README that
+   GitHub renders, the check is still `mmdc` via
+   `"${CLAUDE_SKILL_DIR}/../diagram-review/scripts/render.py" diagram.mmd`.
    Read the PNG at both widths. Feed exact parser errors back and fix, counting
    each fix against the budget.
 7. **Review.** Invoke `diagram-review` on the source (and PNG if any) with the
@@ -86,7 +102,11 @@ and a deterministic loop around it, inside one fixed budget.
 - A Mermaid block that passes `mermaid_lint.py` with 0 errors, with the config
   pin and `accTitle`/`accDescr`, ≤ 12 nodes per diagram.
 - The maid/mmdc result (or "unvalidated" with the reason) and the review verdict.
-- For DOT: the `.dot` source and, when `dot` exists, the rendered SVG.
+- For DOT: the `.dot` source and, when `dot` exists, the rendered SVG/PNG in
+  the design system.
+- For exported Mermaid: the beautiful-mermaid SVG and PNG (`data-design-system`
+  is not set on them; lint them visually, not with `svg_lint.py`).
+- Want it animated? Hand the SVG to `diagram-animate`.
 
 ## Gotchas
 
@@ -96,7 +116,10 @@ and a deterministic loop around it, inside one fixed budget.
   README, and never paste private diagrams into hosted editors or kroki.io
   (they keep nothing under your access controls).
 - Several bundled themes fail WCAG AA contrast (open issue #3691) — `theme:
-  base` with the ink/paper variables is the safe baseline.
+  base` with the design system's variables is the safe baseline (the token
+  checker has already verified their contrast).
+- beautiful-mermaid ignores the `config:` frontmatter (the renderer strips it)
+  and does not support gantt, pie, mindmap or C4 — render those with mmdc.
 - `->` is invalid in a flowchart but valid in a sequence diagram; the lint knows
   the difference, so trust its type-specific errors, not a generic rule.
 - A clean render proves syntax, not truth. The reviewer's fidelity pass is the

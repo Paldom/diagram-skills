@@ -15,9 +15,23 @@ verified against primary sources on 2026-09-14.
    (a prettier engine, a richer tool) never beats the destination.
 4. **Relations decide the ceiling of the illustration archetypes:** they express
    order (flow), layering (stack), a center with satellites (hub), position on
-   two axes (grid), and membership (compare) — not labeled, directed edges
-   between arbitrary entities. A takeaway that needs those goes to Mermaid.
-5. **Complexity gate:** more than ~12 entities never fits one view. Split by
+   two axes (grid), membership (compare) and time (timeline). Labeled, directed
+   edges between systems go to the **architecture** compiler in
+   `illustration-draw` when the destination is visual (post, slide, docs
+   image), to Mermaid when it is Markdown.
+5. **A type this repo does not draw goes to diagram-design, in the same theme.**
+   The compilers cover flow, stack, hub, grid, compare/tiers, matrix, timeline,
+   architecture and the pipeline explainer; `mermaid-draw` covers flowchart,
+   sequence, state, ER, class and DOT. Everything else in the table below
+   (swimlane, org chart, tree, Venn, pyramid/funnel, treemap, heatmap, charts,
+   Gantt, Sankey, fishbone, Wardley map, kanban, journey, radar, loop/flywheel,
+   deployment, DB schema, story map) → **diagram-design**
+   (`npx skills add cathrynlavery/diagram-design`). Export the active theme first:
+   `to_diagram_design.py --design-system <theme> --write --marker .` (in
+   `diagram-design-system`; it writes `~/.diagram-design/profiles/ds-<theme>.md`
+   and the project's `.diagram-design` marker — ask before running it). Never
+   bend a missing type into a near archetype.
+6. **Complexity gate:** more than ~12 entities never fits one view. Split by
    level (context → container → component, the C4 idea) or by phase, and say so
    in the brief. No layout engine keeps 25 nodes readable.
 
@@ -28,7 +42,13 @@ verified against primary sources on 2026-09-14.
 | README, docs page, PR or issue body, wiki, Notion, Obsidian | Mermaid diagram-as-code | `mermaid-draw` | Renders natively in GitHub, GitLab, Notion, Obsidian, VS Code; diffable text in the same PR; validated before it ships |
 | Dependency tree, package graph, anything with many nodes and one direction | Graphviz DOT | `mermaid-draw` (DOT section) | Graphviz owns the layout entirely; needs `dot` installed, else fall back to a ≤ 12-node Mermaid flowchart |
 | LinkedIn / X post, article hero, newsletter, talk slide, one-pager | Slide-like SVG → PNG | `illustration-draw` | Mermaid's default look reads as "Mermaid slop" outside Markdown; a compiled SVG on a fixed grid with one accent reads as designed |
-| Editable diagram a team will keep changing in a tool | Handoff | draw.io skill, FigJam, or Claude Design (see below) | Ownership of layout moves to the tool; regeneration would destroy manual edits |
+| Architecture for a post, slide or docs image: boundaries, cards with icons, an ordered flow | Architecture SVG → PNG | `illustration-draw` (`arch_svg.py`) | Graphviz lays it out, the design system paints it; numbered badges + legend tell the order |
+| Exported Mermaid image (docs site, slide) rather than a Markdown embed | beautiful-mermaid SVG/PNG | `mermaid-draw` (`render_themed.py`) | Same source, design-system look, no "Mermaid slop" |
+| Any of the above as a GIF or video (explainer, feed post) | Animated SVG + GIF/MP4 | draw first, then `diagram-animate` | Reveal in reading order; `pipeline` pans across a wide diagram |
+| Editable diagram a team will keep changing in a tool | Handoff | drawio-skill, FigJam, or Claude Design (see below) | Ownership of layout moves to the tool; regeneration would destroy manual edits |
+| Interactive architecture a reader explores | Handoff | archify (light) | Zoom, trace, search in one HTML file; heavy for a README |
+| Editorial figure where the typography is the look | Handoff | diagram-design | Most editorial result; fact-check every label |
+| A diagram type this repo does not draw (see precedence 5) | Delegate | diagram-design, with the theme exported as its profile | 41 types; the profile keeps the palette, fonts and one accent; fact-check every label |
 | Characters, scenes, brand illustration, photos, a full deck | Handoff | Claude Design `/design`, or a deck skill | Outside a minimalist technical diagram; do not fake it with boxes |
 
 ## Idea shape → diagram type
@@ -43,7 +63,11 @@ verified against primary sources on 2026-09-14.
 | one thing everything depends on | `flowchart` | `hub` |
 | a 2×2 tradeoff or quadrant | — | `grid` |
 | 2–3 options side by side | — | `compare` |
+| milestones in time | `timeline` or `gantt` | `timeline` |
+| data moving through stages: an explainer of how a system answers, with payloads and latencies | — | pipeline explainer (`pipeline_svg.py`), animated with `--preset pipeline` |
+| systems, boundaries, ordered calls between them | `flowchart LR` with subgraphs | architecture (`arch_svg.py`) |
 | a tree or dependency graph | DOT (`digraph`, `rankdir=LR`) | — |
+| lanes of responsibility, an org chart, Venn, funnel, treemap, heatmap, a chart (bar, line, scatter, waterfall), Gantt, Sankey, fishbone, Wardley map, kanban, journey, radar, flywheel, deployment, DB schema | — | — → **diagram-design** in the exported theme |
 
 ## Handoff targets (verified 2026-09-14)
 
@@ -59,8 +83,11 @@ verified against primary sources on 2026-09-14.
   Mermaid, supports flowchart, sequence, state, gantt, ER only; no emoji/HTML in
   labels; in Claude Code it returns a FigJam *link*, edits happen in FigJam
   (help.figma.com/hc/en-us/articles/37883260397975).
-- **draw.io**: `Agents365-ai/drawio-skill` (MIT) produces editable `.drawio`
-  from text, IR JSON, Terraform, SQL, OpenAPI; local Python; see the catalog.
+- **Reference styles** — diagram-design (editorial), archify (light,
+  interactive), drawio-skill (editable): install commands, how to feed each
+  one `design-system.md`, and the measured caveats are in the catalog's
+  "Reference styles" section. Hand over the brief and the design system
+  verbatim; review what comes back.
 
 ## Evidence behind the routing
 

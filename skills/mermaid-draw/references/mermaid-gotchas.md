@@ -17,23 +17,26 @@ config:
   layout: dagre
   themeVariables:
     primaryColor: "#FFFFFF"
-    primaryTextColor: "#1A1A1F"
-    primaryBorderColor: "#C9C9CF"
-    lineColor: "#6B6B75"
-    fontFamily: "Inter, Helvetica, Arial, sans-serif"
+    primaryTextColor: "#232F3E"
+    primaryBorderColor: "#8E95A2"
+    lineColor: "#3D4756"
+    fontFamily: "Manrope, Inter, Helvetica, Arial, sans-serif"
 ---
 flowchart LR
   accTitle: Deploy pipeline
   accDescr: One artifact moves through three gates
   A["Commit (main)"] --> B["Build once"]
   B -->|"immutable image"| C["Deploy"]
-  classDef accent stroke:#2563EB,stroke-width:3px,color:#2563EB
+  classDef accent fill:#FFE27A,stroke:#FFE27A,color:#232F3E
   class B accent
 ```
 
 Why `theme: base` plus variables: an open Mermaid issue (#3691, since 2022) says
 several bundled themes fail WCAG AA contrast in light and/or dark mode. `base` is
-the neutral starting point; the variables above give ink on paper with one accent.
+the neutral starting point; the variables above are the default design
+system's (abridged). `scripts/render_themed.py --config` prints the full block
+for whichever design system is active, and the accent is a highlighter fill
+behind ink, never a coloured outline or text.
 
 Hosts lag: GitHub renders Mermaid natively but bundles its own version, so avoid
 the newest diagram types (use case, swimlane, Venn) in READMEs, and remember a

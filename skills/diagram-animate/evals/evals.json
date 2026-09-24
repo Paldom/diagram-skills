@@ -1,0 +1,110 @@
+{
+  "skill": "diagram-animate",
+  "cases": [
+    {
+      "type": "should_trigger",
+      "prompt": "animate this architecture diagram so the steps appear one by one"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "turn diagram.svg into a gif for linkedin"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "make an animated gif of the pipeline, camera panning across each stage"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "can u make the flow diagram draw itself, like an explainer video"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "export the timeline as an mp4 animation"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "animated svg of the request flow for the docs site"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "I want the connectors to draw in and the badges to pop, then hold the last frame \u2014 gif please"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "motion version of this diagram, reveal in reading order"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "make a slide deck from these three diagrams that builds each one step by step like PowerPoint"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "draw a mermaid sequence diagram of the login flow"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this diagram - is it readable?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a social card SVG for my article on WebSockets"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "convert this video to a gif with ffmpeg"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "add a CSS hover animation to the navbar button"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "create a design system from my moodboard folder"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which diagram format should I use for this blog post?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "record a terminal demo gif of the CLI"
+    },
+    {
+      "type": "quality",
+      "prompt": "animate /tmp/arch.svg as a gif, same look as the static one",
+      "expected_behavior": [
+        "runs animate.py on the static SVG with the same design system that built it, producing an animated SVG plus the GIF",
+        "asks before or states that --allow-install runs a pinned npm ci the first time, and does not install silently",
+        "inspects several frames (early, middle, last) before handing off, and the last frame equals the static diagram",
+        "reports duration, file size, and the paths; does not commit or push"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "wide pipeline diagram, make a video where the camera pans left to right as each stage appears",
+      "expected_behavior": [
+        "uses the pipeline preset with a frame width smaller than the diagram so the camera pans",
+        "keeps the title pinned while the content pans",
+        "produces an MP4 and/or GIF and checks frames for the camera staying ahead of the reveal"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "animate the mermaid flowchart I exported with beautiful-mermaid",
+      "expected_behavior": [
+        "accepts an SVG without data-step and reveals it in document order",
+        "says the reveal order is approximate for foreign SVGs and checks frames for a sensible order",
+        "does not rewrite the diagram itself"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "animate docs/arch.svg like a PowerPoint build: zoom on the app layer first, then reveal the other layers",
+      "expected_behavior": [
+        "uses the build preset on an arch_svg output (layers carry data-id/data-group), not reveal",
+        "inspects frames at several times and confirms layers come into focus in order and the take ends on the whole diagram",
+        "delivers the MP4 (and GIF only if asked), noting the GIF size"
+      ]
+    }
+  ]
+}

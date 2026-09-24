@@ -1,20 +1,27 @@
 ---
 name: illustration-draw
-description: Draws a minimalist slide-like illustration as one SVG - social card, article hero, talk slide, overview visual - compiled from a brief onto a fixed grid, then linted, rendered, and reviewed. Use when the user asks for a visual, illustration, graphic, social card, LinkedIn or X image, hero image, or slide visual. Not for Mermaid diagrams in Markdown, icons, decks, charts, or reviewing an image.
+description: Draws a minimalist visual from a brief as one SVG in the active design system - architecture diagram with numbered steps, timeline, social card, hero, infographic-style graphic, slide visual - compiled from a JSON spec, then reviewed. Use when the user asks for a visual, illustration, graphic, architecture diagram, timeline, or LinkedIn or X image. Not for Mermaid in Markdown, app icons, or decks.
 license: MIT
 argument-hint: <brief path, or one-line idea + destination>
 ---
 
 # illustration-draw
 
-Produce a card that reads as designed: one takeaway, three to six specific
-elements, one accent, flat. Free-hand SVG from a language model collides once
+Produce a visual that reads as designed: one takeaway, specific elements,
+one highlighter, in the active design system. Free-hand SVG from a language model collides once
 it has more than a handful of elements, and the popular "no Mermaid slop"
 skills turn out to have the model hand-place every coordinate — so here the
-model does not write geometry. It writes a **JSON spec** (archetype, title,
-labels, the one accent) and `build_svg.py` places it on a fixed grid with
-capacity checks and approximate text fitting; the render is still inspected,
-because fonts vary by machine. This skill runs inside one fixed budget.
+model does not write geometry. It writes a **JSON spec** and a compiler
+places it: `build_svg.py` puts cards (`flow`, `stack`, `hub`, `grid`,
+`compare`, `timeline`, `matrix`) on a fixed grid with capacity checks;
+`arch_svg.py` lets Graphviz lay out an **architecture diagram** (groups,
+cards with outline icons, pill tags, sticky notes, orthogonal connectors,
+numbered step badges plus a legend) and paints it. Both read the design
+system (`--design-system`, `$DIAGRAM_DESIGN_SYSTEM`, `./design-system.md`,
+else the built-in Studio look; see `diagram-design-system`) and tag every
+element with `data-step`, so `diagram-animate` can turn the result into a GIF.
+The render is still inspected, because fonts vary by machine. This skill runs
+inside one fixed budget.
 
 ## When NOT to use
 
@@ -45,10 +52,19 @@ because fonts vary by machine. This skill runs inside one fixed budget.
    a stated takeaway.
 2. **Choose** the archetype by the idea's shape — `flow` (steps), `stack`
    (layers), `hub` (one center, satellites), `grid` (2×2 tradeoff), `compare`
-   (2–3 options) — the canvas (`social` 1200×630 for LinkedIn/X/OG, `wide`
-   1600×900 for slides, `square` 1080), the theme (light default), and the
-   accent hex if the brand has one. Read `references/style-rules.md` once per
-   session; it is what the drawer and the reviewer both follow. If the brief's
+   (2–3 options), `timeline` (3–12 dated milestones on one left-to-right
+   track; solid up to the highlight, dashed after) — or an
+   **architecture** spec when the takeaway needs systems, boundaries and an
+   ordered flow between them (`arch_svg.py --sample` prints a working one).
+   Pick the canvas (`social` 1200×627 for LinkedIn/X/OG, `square` 1080×1080,
+   `wide` 1920×1080 for slides — or `--canvas` to override; `{"w","h"}` for a
+   wide panorama to camera-pan; `arch_svg.py`/`pipeline_svg.py --canvas` fit a
+   finished diagram and warn under 12 px). Figures are inline by default: the
+   title is the SVG `<title>`/alt text, not drawn — add `--show-title` for a
+   slide or social card. Pick an `icon` per card from `icons.py --list` (35
+   outline icons, line or isometric-line by the design system). Read
+   `references/style-rules.md` once per session; it is what the drawer and the
+   reviewer both follow. If the brief's
    required entities exceed the archetype's capacity, split the brief or route
    to `mermaid-draw` — dropping a required entity is a fidelity failure, not a
    fix.
@@ -70,13 +86,23 @@ because fonts vary by machine. This skill runs inside one fixed budget.
    python3 "${CLAUDE_SKILL_DIR}/scripts/build_svg.py" diagram-design/<slug>/<slug>.spec.json --out diagram-design/<slug>/<slug>.svg
    ```
 
+   Architecture specs compile with `arch_svg.py SPEC.json --out X.svg` (needs
+   Graphviz `dot`). Add `--design-system PATH` to either compiler to restyle.
+   How a system works, step by step (question → model → answers → query → spec
+   → rendered result), is a **pipeline explainer**: `pipeline_svg.py SPEC.json
+   --out X.svg` lays columns of labelled code/JSON panels (with bracket
+   callouts to coloured notes), tall processor boxes with latency captions, a
+   rendered mini-dashboard and a timing bar left to right —
+   `pipeline_svg.py --sample` prints one; animate it with `diagram-animate
+   --preset pipeline`. Lint it with `--diagram --max-words 400` (it is read
+   over time).
    A capacity ERROR ("does not fit", "needs 2-6 items") means shorten labels or
    remove elements the takeaway does not need; never shrink text.
 4. **Lint and render** with the sibling review scripts (install with
    `npx skills add Paldom/diagram-skills --skill diagram-review` if missing):
 
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/../diagram-review/scripts/svg_lint.py" diagram-design/<slug>/<slug>.svg
+   python3 "${CLAUDE_SKILL_DIR}/../diagram-review/scripts/svg_lint.py" diagram-design/<slug>/<slug>.svg  # --diagram for architecture
    python3 "${CLAUDE_SKILL_DIR}/../diagram-review/scripts/render.py" diagram-design/<slug>/<slug>.svg
    ```
 
@@ -86,7 +112,7 @@ because fonts vary by machine. This skill runs inside one fixed budget.
    path. On FIX edit the spec, on REDRAW change archetype or cut content and
    return to step 3; either way recompile, lint, render, then one re-check at
    most.
-6. **Deliver** the SVG and the delivery-size PNG paths (feeds want PNG; LinkedIn
+6. **Deliver** (and offer `diagram-animate` for a GIF/MP4) the SVG and the delivery-size PNG paths (feeds want PNG; LinkedIn
    and X do not accept SVG), the spec, the verdict, and anything left out of the
    brief. Never commit or push.
 
@@ -97,6 +123,14 @@ because fonts vary by machine. This skill runs inside one fixed budget.
 - `diagram-design/<slug>/renders/<slug>/<slug>-<w>.png` at two widths.
 - `diagram-design/<slug>/<slug>.spec.json` — the editable source of truth.
 - The review verdict and residual warnings, in one short block.
+
+## Spec options and generated visuals
+
+Card anatomy, every optional spec key (`eyebrow`, `numbered`, `takeaway`,
+item `chips`, the hub `bus` layout, tiered `compare` with S/M/L badges and a
+complexity `scale`, the `matrix` archetype) and the Gemini icon/hero workflow
+(`scripts/gemini_icon.py`, needs `GEMINI_API_KEY` and `--allow-network`) are in
+`references/spec-options.md` — read it when the brief needs one of them.
 
 ## Gotchas
 
@@ -112,6 +146,8 @@ because fonts vary by machine. This skill runs inside one fixed budget.
 - The drawer prompt asks for content, not compliance — rules live in the compiler
   and the lint, because format-restricted prompts measurably degrade reasoning
   (reference in `references/style-rules.md`).
+- The neumorph lift is the one filter allowed (`<filter data-ds="neumorph">`);
+  the accent is a fill behind ink — the lint errors if it becomes text or a line.
 - Fonts are a system stack declared on the root; no CDN fonts, so text metrics
   differ slightly between machines. The lint's fitting is approximate; the
   half-size render is the check that counts.

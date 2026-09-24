@@ -53,7 +53,12 @@ Answer yes/no; each "no" is a finding with the visible fact that caused it.
 - [ ] No crossing connectors that could be avoided.
 - [ ] The title is a sentence with a claim, not a topic label.
 - [ ] One accent, on the element that carries the takeaway; neutrals elsewhere.
-- [ ] No gradients, shadows, 3D, decorative icons, emoji, legends, or unused shapes.
+- [ ] No gradients, heavy shadows, 3D extrusions, decorative icons, emoji, colour
+      legends, or unused shapes. Allowed: the design system's subtle two-sided
+      lift on panels, one outline icon per card that names the thing, and a
+      numbered-step legend.
+- [ ] Matches its design system (`data-design-system` on the SVG): palette,
+      font, radius, icon style — not an ad-hoc look.
 - [ ] One font family; ≤ 2 stroke widths.
 
 ## Verdict rules

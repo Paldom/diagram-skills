@@ -54,6 +54,8 @@ Archetype guide:
 - flow: steps or stages in order (2-6)     - stack: layers, tiers, levels (2-5)
 - hub: one center with satellites (3-6)     - grid: 2x2 tradeoff or quadrant (exactly 4)
 - compare: 2-3 options side by side, 1-5 short rows each
+- timeline: 3-12 milestones in time order, detail = the date
+Items may name an outline icon (see the schema) when it names the real thing.
 
 Spec schema (JSON):
 {schema}
@@ -104,6 +106,7 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--name", default="illustration", help="output file stem")
     ap.add_argument("--dry-run", action="store_true", help="write the prompt, do not call acpx")
+    ap.add_argument("--design-system", help="design-system.md to compile with")
     args = ap.parse_args()
 
     if not args.brief.is_file():
@@ -171,7 +174,8 @@ def main() -> int:
     print(f"SPEC {spec_path}")
     svg_path = args.out_dir / f"{args.name}.svg"
     built = subprocess.run(
-        [sys.executable, str(BUILD), str(spec_path), "--out", str(svg_path)],
+        [sys.executable, str(BUILD), str(spec_path), "--out", str(svg_path)]
+        + (["--design-system", args.design_system] if args.design_system else []),
         capture_output=True,
         text=True,
         check=False,

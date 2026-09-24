@@ -28,6 +28,8 @@ evals:
 test:
 	python3 scripts/test_run_evals.py
 	python3 scripts/test_validate_skills.py
+	python3 scripts/test_vendored.py
+	for f in skills/*/scripts/*.py; do grep -q -- '--self-test' $$f && { python3 $$f --self-test || exit 1; }; done; true
 
 ## hooks: install the commit-time layer (pre-commit + pre-push)
 hooks:

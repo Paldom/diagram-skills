@@ -1,6 +1,6 @@
 ---
 name: diagram-brief
-description: Turns a title or notes into a one-page diagram brief - takeaway, audience, destination, entities, relations - and picks the format (Mermaid, slide-like SVG illustration, or design-tool handoff). Use when the user has an idea for a visual but no format yet, asks mermaid or illustration, which diagram type or format fits, or wants a brief before drawing. Not for drawing, reviewing, decks, or charts.
+description: Turns a title or notes into a one-page diagram brief - takeaway, audience, destination, entities, relations - and picks the format (Mermaid, slide-like SVG illustration, or design-tool handoff). Use when the user has an idea for a visual or post but is not sure what format fits, asks mermaid or illustration, which diagram type, or wants a brief first. Not for drawing, reviewing, decks, or charts.
 license: MIT
 argument-hint: <title, notes, or "from this repo">
 ---
@@ -48,10 +48,17 @@ skills execute and the reviewer checks fidelity against.
    Mermaid; feeds, articles, slides → SVG illustration; editable or illustrative
    work → handoff) — an inferred preference for a prettier engine never
    overrides it. Relations with labeled, directed edges between more than three
-   entities need Mermaid, whatever the destination. Record the diagram type or illustration
-   archetype (flow, stack, hub, grid, compare), the canvas, and the skill.
+   entities need Mermaid for Markdown destinations and the architecture
+   compiler for visual ones. A type the repo does not draw (swimlane, org
+   chart, Venn, funnel, charts, Gantt, Sankey, …) goes to diagram-design with
+   the theme exported by `to_diagram_design.py` — never bent into a near
+   archetype. Record the diagram type or illustration archetype
+   (flow, stack, hub, grid, compare, timeline, architecture), the canvas, the
+   design system (a `design-system.md` path, or the default), whether it should
+   also be animated, and the skill.
 6. **Name external tooling only when it adds something** the repo's skills do
-   not (editable draw.io, C4 modelling, FigJam, Claude Design), from
+   not (editable draw.io, an interactive archify viewer, a diagram-design
+   editorial figure, C4 modelling, FigJam, Claude Design), from
    `references/skill-catalog.md`, with its install command and caveat. Never
    install anything yourself.
 7. **Write the brief** to `diagram-design/<slug>/brief.md` (create the folder;
@@ -72,10 +79,12 @@ Audience: <who>  ·  Destination: <README | docs | PR | article | LinkedIn/X | s
 - <A> → <B>: <verb + payload>
 
 ## Format
-Medium: <Mermaid <type> | SVG illustration <archetype>, <social 1200×630 | wide 1600×900 | square 1080×1080> | handoff <tool>>
+Medium: <Mermaid <type> | SVG illustration <archetype | architecture>, <social 1200×627 | square 1080×1080 | wide 1920×1080> | handoff <tool>>
 Why: <one line from the router>
-Draw with: <mermaid-draw | illustration-draw | /design | figma-generate-diagram | drawio-skill>
-Style notes: <accent hex if the brand has one; light or dark; anything to avoid>
+Draw with: <mermaid-draw | illustration-draw | diagram-design | archify | drawio-skill | /design | figma-generate-diagram>
+Design system: <path to design-system.md, or "default (Studio)">
+Motion: <none | reveal | pipeline pan> → diagram-animate after review
+Style notes: <which element carries the highlighter; anything to avoid>
 ```
 
 ## Gotchas
@@ -89,8 +98,9 @@ Style notes: <accent hex if the brand has one; light or dark; anything to avoid>
 - **Handoffs are for illustration, not for ambition.** Route to Claude Design or
   FigJam when the visual needs characters, scenes, brand assets, a deck, or
   collaborative editing — not because the idea feels big. Big ideas get split.
-- Gradients, 3D, icons on every node, and rainbow palettes conflict with the
-  house style (one accent, flat, direct labels). Offer the compliant version and
+- Gradients, glows, decorative icons on every node, and rainbow palettes
+  conflict with the design system (one highlighter, the subtle lift only,
+  direct labels). Offer the compliant version and
   ask whether to override; never silently comply or silently refuse.
 - If the brief file cannot be written (read-only checkout, sandbox),
   emit the full brief inline and say that no file was written.

@@ -1,7 +1,7 @@
 {
   "name": "diagram-skills",
   "description": "Agent skills for minimalist technical diagrams: a router that picks the right diagram format for an idea, avoids AI-slop visuals, and checks the result is neat and easy to read.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Paldom",
     "url": "https://github.com/Paldom"

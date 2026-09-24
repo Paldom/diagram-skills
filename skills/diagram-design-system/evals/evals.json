@@ -1,0 +1,97 @@
+{
+  "skill": "diagram-design-system",
+  "cases": [
+    {
+      "type": "should_trigger",
+      "prompt": "create a design system for my diagrams from the moodboard folder"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "make all the diagrams use our brand colors and font"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "write a design-system.md so every diagram looks the same"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "restyle the diagrams: dark canvas, mono font, no shadows"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "extract a palette and style tokens from these reference screenshots for our diagrams"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "check that my diagram theme passes contrast"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "switch the diagram theme to the coral one"
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "can u derive diagram tokens from the images in ./refs, minimalist, shadcn-like"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "draw a mermaid sequence diagram of the login flow"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "review this diagram - is it readable?"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "set up a Tailwind design system for the web app"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "build a React component library with shadcn"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "animate this diagram as a gif"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "make a social card SVG for my article on WebSockets"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "pick a color palette for my slide deck in Keynote"
+    },
+    {
+      "type": "should_not_trigger",
+      "prompt": "which diagram format should I use for this blog post?"
+    },
+    {
+      "type": "quality",
+      "prompt": "make a design system from ./moodboard (minimalist, a bit neumorphic, 3d line icons)",
+      "expected_behavior": [
+        "samples the moodboard with derive_palette.py and looks at the images before choosing tokens",
+        "writes a design-system.md with a design-tokens block that passes design_tokens.py --check, and prose (vocabulary, principles, do/don't) that matches the tokens",
+        "keeps the accent as a single highlighter fill and states measured contrast ratios",
+        "renders the same sample in the new file and the default to prove the switch, and reports how to point the other skills at it"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "our brand is #0B5FFF on white with IBM Plex Sans \u2014 theme the diagrams",
+      "expected_behavior": [
+        "writes a partial theme file that extends the default and changes only the tokens given",
+        "if the brand color fails contrast as text, uses it as a fill or line only and says why",
+        "reports --design-system / DIAGRAM_DESIGN_SYSTEM / ./design-system.md as the three ways to apply it"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "switch all our diagrams to the paper-line theme and regenerate the architecture diagram",
+      "expected_behavior": [
+        "points the renderer at the shipped paper-line theme via --design-system or DIAGRAM_DESIGN_SYSTEM instead of editing SVGs",
+        "regenerates from the spec, not by recolouring the old SVG",
+        "lints the new SVG against the same design system and shows the render"
+      ]
+    }
+  ]
+}

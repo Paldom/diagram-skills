@@ -29,10 +29,17 @@ any file paths. If a skill is missing here, install all of them first:
    skill owns the whole mutation budget (three repairs, regenerations included)
    and the review (one pass, plus at most one re-check after a FIX or REDRAW,
    always followed by a fresh lint and render). Do not review again here.
-   If the route is a handoff (`/design`, FigJam, draw.io), output the brief
-   verbatim with the handoff instruction from the router and stop.
-3. **Report** in one block: the takeaway and assumptions, the artifact paths
-   (source, SVG, PNGs), the review verdict with residual findings, and what was
+   Pass the design system along (`--design-system` path from the brief, else
+   whatever `$DIAGRAM_DESIGN_SYSTEM` / `./design-system.md` resolve to). If the
+   route is a handoff (`/design`, FigJam, drawio-skill, archify, diagram-design),
+   output the brief and the design-system path with the handoff instruction
+   from the router and stop.
+3. **Animate** only when the brief's Motion line or `$ARGUMENTS` asks for a
+   GIF, video, or animation: run `diagram-animate` on the reviewed SVG
+   (`pipeline` for a wide left-to-right diagram, else `reveal`) and look at its
+   frames. Ask before its one-time `--allow-install`.
+4. **Report** in one block: the takeaway and assumptions, the artifact paths
+   (source, SVG, PNGs, GIF/MP4 if animated), the design system used, the review verdict with residual findings, and what was
    left out. Never commit or push.
 
 ## From other harnesses or with another model

@@ -1,0 +1,8 @@
+{
+  "name": "diagram-animate-runtime",
+  "private": true,
+  "description": "Pinned runtime for capture.mjs; installed on demand with npm ci --ignore-scripts into a per-user cache.",
+  "dependencies": {
+    "puppeteer-core": "25.11.0"
+  }
+}

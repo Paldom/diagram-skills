@@ -127,6 +127,20 @@
     {
       "type": "should_trigger",
       "prompt": "mermaid or svg? which format for explaining the auth flow to executives"
+    },
+    {
+      "type": "quality",
+      "prompt": "brief a Sankey diagram of where our API traffic goes - web, mobile and partners into the gateway, then out to the four subgraphs - for our coral-themed engineering blog",
+      "expected_behavior": [
+        "recognises Sankey is not a type this repo's compilers draw and routes it to the diagram-design skill (cathrynlavery/diagram-design) instead of forcing a flow or architecture archetype",
+        "keeps the coral theme: names `to_diagram_design.py --design-system coral` to export the theme as a diagram-design profile and says to ask before it writes ~/.diagram-design/profiles and the project's .diagram-design marker",
+        "lists the flows as a strict entity list (sources, gateway, four subgraphs, the volumes) so diagram-design does not invent facts, and recommends diagram-review's fidelity pass on the result",
+        "writes the brief and does not draw the diagram or install anything itself"
+      ]
+    },
+    {
+      "type": "should_trigger",
+      "prompt": "which skill should draw an org chart of our platform team in our house theme?"
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "name": "mermaid-draw-renderer",
+  "private": true,
+  "description": "Pinned renderer for mermaid-draw: beautiful-mermaid for SVG, puppeteer-core to rasterize it in the system Chrome.",
+  "type": "module",
+  "dependencies": {
+    "beautiful-mermaid": "1.1.3",
+    "puppeteer-core": "25.11.0"
+  }
+}

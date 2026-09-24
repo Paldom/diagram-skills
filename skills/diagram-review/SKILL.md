@@ -1,6 +1,6 @@
 ---
 name: diagram-review
-description: Reviews a diagram - Mermaid, DOT, SVG, or PNG - with lints (syntax, caps, contrast, overlap), a render, and an analyze-then-judge checklist, returning PASS, FIX, REDRAW, or INCOMPLETE. Use when the user asks to review, critique, check, rate, compare, or fix a diagram, or whether it is readable, neat, or too busy. Not for drawing, choosing a format, icon or UI reviews, or code review.
+description: Reviews a diagram or social card - Mermaid, DOT, SVG, or PNG - with lints (syntax, caps, contrast, overlap, tokens), a render, and an analyze-then-judge checklist, returning PASS, FIX, REDRAW, or INCOMPLETE. Use when the user asks to review, critique, check, rate, compare, or fix a diagram, or whether it is readable, neat, faithful to its brief, or AI slop. Not for drawing, UI reviews, or code.
 license: MIT
 argument-hint: <diagram path(s), optionally --brief <path>>
 ---
@@ -33,8 +33,14 @@ INCOMPLETE (what could not be checked).
 
    ```bash
    python3 "${CLAUDE_SKILL_DIR}/scripts/mermaid_lint.py" diagram.mmd      # or README.md (all fences)
-   python3 "${CLAUDE_SKILL_DIR}/scripts/svg_lint.py" illustration.svg
+   python3 "${CLAUDE_SKILL_DIR}/scripts/svg_lint.py" illustration.svg     # --diagram for full-size architecture
    ```
+
+   SVGs from these skills carry `data-design-system`; the lint then loads the
+   same design system (pass `--design-system PATH` if it is not the active
+   one) and checks the palette, allows only the neumorph lift filter, and
+   errors when the accent is used as text or a line. Lint the static SVG, not
+   an animated one.
 
    **Security gate:** an SVG with `<script>`, `<image>`, `<foreignObject>`,
    external `href`, or an event handler is rejected here — do not render it,
@@ -54,7 +60,10 @@ INCOMPLETE (what could not be checked).
    Inkscape, headless Chrome with network blocked, or macOS qlmanage; Mermaid
    needs `mmdc` or `--allow-download`. If nothing can render, relay the install
    hints and the verdict is **INCOMPLETE** — never judge markup.
-4. **Read both PNGs** (delivery width and half width) with the Read tool.
+4. **Read both PNGs** (delivery width and half width) with the Read tool. For
+   an animation (`diagram-animate` output) also read a contact sheet of frames:
+   reading order must match the story, the last frame must equal the static
+   diagram, and a camera pan must never leave the newest element off-frame.
 5. **Analyze, then judge**, per `references/checklist.md`: Pass A transcribes
    every text run and counts elements and connectors; Pass B checks fidelity
    against the reference (missing, extra, reversed, wrong level, claim); Pass C
