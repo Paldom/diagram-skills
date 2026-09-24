@@ -10,20 +10,6 @@ Agent skills that turn a title, a few notes, or a hot take into a minimalist tec
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![skills.sh](https://skills.sh/b/Paldom/diagram-skills)](https://skills.sh/Paldom/diagram-skills)
 
-## Demo
-
-<p align="center">
-  <img src="assets/demo.gif" alt="Terminal recording: /diagram-brief run headless writes a brief that routes a LinkedIn ask to a compiled SVG card" width="900"/>
-</p>
-
-The recording above is a real headless run of the routing step (source: `assets/demo.tape`, regenerate with `vhs assets/demo.tape`): one ask in, a one-page brief out — the takeaway, the entities and relations, and the format decision with its reason.
-
-What a real headless `/illustrate` run returned for the ask in the tape above (verdict PASS, second opinion from a different model included). The model wrote the title, the subtitle and six labels; the grid, sizes, and contrast came from the compiler:
-
-<p align="center">
-  <img src="assets/demo-card.png" alt="Compiled social card: Your gateway should only do three things" width="600"/>
-</p>
-
 ## Gallery
 
 Figures are **inline by default**: no drawn title, so they sit under your article's
