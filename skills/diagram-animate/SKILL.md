@@ -67,8 +67,7 @@ notes → the accent fills in last → hold.
 4. **Slides.** Several diagrams become one talk with `deck.py`: a single
    offline HTML deck (→/space/click advance, each slide replays its build,
    `f` fullscreen, `a` autoplay) and, with `--mp4`, one 1080p video of every
-   slide's build (`--preset auto`: layered architecture builds, cards reveal).
-   Compile slide sources with `--show-title` — figures are title-less by default:
+   slide's build (`--preset auto`: layered architecture builds, cards reveal):
 
    ```bash
    python3 "${CLAUDE_SKILL_DIR}/scripts/deck.py" a.anim.svg b.anim.svg --out deck.html

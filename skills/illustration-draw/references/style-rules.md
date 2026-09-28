@@ -9,10 +9,9 @@ primary sources on 2026-09-14.
 
 - The **title is the takeaway**, written as a sentence a reader can disagree with
   ("One artifact moves through three gates"), not a topic label ("CI pipeline").
-- **Inline by default.** A figure in an article sits under the article's own
-  heading, so the title is *not drawn*: it becomes the SVG `<title>` (and the
-  alt text / caption you hand over). Draw it only for a slide, deck or social
-  card (`show_title: true` / `--show-title`), where the image travels alone.
+- **Always inline.** A figure sits under the article's (or slide's) own
+  heading, so the title is *never drawn*: it becomes the SVG `<title>` and the
+  alt text / caption you hand over. No kicker, no footer handle either.
 - If the brief contains two ideas, draw the one in the takeaway and say what was
   left out. Two ideas on one card is the most common reason a visual fails.
 - Everything on the card either supports the takeaway or is deleted.
@@ -41,6 +40,15 @@ primary sources on 2026-09-14.
 | `grid` | position on two named axes (exactly 4) | anything not a 2×2 |
 | `compare` | membership: which trait belongs to which option (2–3 × 1–5) | relations between options |
 | `timeline` | order in time: 3–12 milestones on one track (dashed after the highlight = planned) | durations, overlaps, branches, dates to scale |
+| `matrix` | groups × items as a ruled table (2–4 rows × 1–4 entries, one highlighted entry) | relations between entries, real column semantics beyond a shared row |
+| `cycle` | a loop: 3–6 stages, the last feeds the first | branches, exits from the loop |
+| `before_after` | a change of state: 2–6 aligned pairs, old → new | more than two states, partial migrations over time |
+| `swimlane` | ownership over order: 3–8 steps across 2–4 actors, hand-offs drop between lanes | parallel steps, loops, schedules |
+| `decision` | choose-when: questions with 2–3 labelled branches down to ≤ 7 answers | probabilities, re-joining branches |
+| `tree` | decomposition: one parent per node, ≤ 4 levels, ≤ 7 leaves | shared children, cross links |
+| `quadrant` | position: 3–10 named points on two axes | data plots, real scales |
+| `metrics` | magnitude: 1–4 KPI tiles and/or 2–8 ranked bars, values supplied by the brief | time series, invented numbers |
+| `layers` | containment: 2–5 nested boundaries, outermost first | overlaps (Venn → diagram-design) |
 | pipeline explainer (`pipeline_svg.py`) | data moving through stages: artifacts in, a processor, artifacts out, with callouts and latencies | branching flows, more than ~8 stages |
 | architecture (`arch_svg.py`) | systems in boundaries, labelled calls, an ordered flow (badges 1..n + legend), notes; ≤ 24 cards | a data chart; anything a 3-card flow already says |
 

@@ -16,7 +16,6 @@ Spec (JSON):
    "edges":  [{"from", "to", "label"?, "step"?, "dashed"?}],
    "notes":  [{"text", "near", "side"?: "top"|"right"|"bottom"|"left"}],
    "steps":  {"1": "Authenticate", ...},
-   "footer": "...",
    "layout": "columns"   (optional: top-level groups become equal-height peer columns),
    "scope": {"label": "Terraform", "pill": "IaC"}   (optional: one outline around every group)}
 
@@ -82,6 +81,11 @@ def validate(spec: dict) -> bool:
     if not isinstance(spec, dict):
         err("spec must be a JSON object")
         return False
+    for key in ("show_title", "footer"):
+        if key in spec:
+            err(
+                f"{key} was removed — figures are inline: the article carries the heading and credits"
+            )
     if not isinstance(spec.get("title"), str) or not spec["title"].strip():
         err("title is required — it states the takeaway")
     groups = spec.get("groups", [])
@@ -331,25 +335,13 @@ def render(spec: dict, t: dict) -> str:
     by_name = {o.get("name"): o for o in objs}
 
     m = sp["margin"]
-    show = bool(spec.get("show_title"))  # inline by default: the title is only <title>/<desc>
-    title_h = (
-        ty["title-size"] * 1.3 + (ty["body-size"] * 1.8 if spec.get("subtitle") else 0) + 24
-        if show
-        else 0
-    )
+    title_h = 0  # figures are inline: the title is only <title>/<desc>
     steps = spec.get("steps", {})
     legend_h = 56 if steps else 0
     notes_pad = 150 if spec.get("notes") else 0
     W = GW + 2 * m + notes_pad
-    head_w = max(  # the canvas is never narrower than its own title (display faces run wide)
-        text_w(spec["title"], ty["title-size"], True) * 1.06,
-        text_w(spec.get("subtitle") or "", ty["body-size"]),
-    )
-    if show and head_w + 2 * m > W:
-        notes_pad += head_w + 2 * m - W  # grow the side margins so the diagram stays centred
-        W = head_w + 2 * m
     scope_h = 40 if spec.get("scope") else 0
-    H = GH + title_h + legend_h + scope_h + 2 * m + (24 if spec.get("footer") else 0)
+    H = GH + title_h + legend_h + scope_h + 2 * m
     ox, oy = m + notes_pad / 2, m + title_h
 
     lift = t["elevation"]["style"] in ("neumorph", "soft")
@@ -539,25 +531,6 @@ def render(spec: dict, t: dict) -> str:
 
     # title, legend, footer
     head = ""
-    if show:
-        head = text(
-            m,
-            m + ty["title-size"],
-            spec["title"],
-            ty["title-size"],
-            c["ink"],
-            ty["title-weight"],
-            extra=f' letter-spacing="{ty["title-tracking"]}em"',
-        )
-        if spec.get("subtitle"):
-            head += text(
-                m,
-                m + ty["title-size"] + ty["body-size"] * 1.6,
-                spec["subtitle"],
-                ty["body-size"],
-                c["lede"],
-                400,
-            )
     scope = ""
     if spec.get("scope") and group_boxes:
         sc = spec["scope"]
@@ -588,7 +561,7 @@ def render(spec: dict, t: dict) -> str:
     if steps:
         lx, ly = (
             ox,
-            H - m - (24 if spec.get("footer") else 0) - 8,
+            H - m - 8,
         )  # aligned with the diagram, not the canvas
         items = []
         for k in sorted(steps, key=lambda s: int(s)):
@@ -609,11 +582,7 @@ def render(spec: dict, t: dict) -> str:
             lx += 2 * r + 8 + text_w(steps[k], ty["label-size"]) + 32
         legend = f'<g data-step="{step}" data-kind="legend">{"".join(items)}</g>'
         step += 1
-    foot = (
-        text(W - m, H - m + 4, spec["footer"], ty["small-size"], c["muted"], 400, "end")
-        if spec.get("footer")
-        else ""
-    )
+    foot = ""
 
     defs = svg_defs(t)
     return (
@@ -927,9 +896,6 @@ def main() -> int:
     ap.add_argument("--design-system", default=None)
     ap.add_argument("--sample", action="store_true", help="print a sample spec")
     ap.add_argument(
-        "--show-title", action="store_true", help="draw the title/subtitle (slides, social cards)"
-    )
-    ap.add_argument(
         "--canvas",
         choices=sorted(dt.CANVASES),
         help="fit onto a standard canvas: social 1200x627, square 1080x1080, wide 1920x1080",
@@ -945,8 +911,6 @@ def main() -> int:
         ap.error("SPEC and --out are required")
     try:
         spec = json.loads(args.spec.read_text(encoding="utf-8"))
-        if args.show_title:
-            spec["show_title"] = True
         tokens = dt.load(args.design_system)
     except (OSError, ValueError, dt.TokenError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

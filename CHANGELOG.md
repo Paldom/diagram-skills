@@ -7,6 +7,46 @@ versioning: [SemVer](https://semver.org) on the plugin manifest
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-29
+
+Eight relation-first diagram types, relation-first routing with delegation to
+diagram-design and Mermaid, the matrix as a ruled table, the red-line coral,
+and figures that are always inline.
+
+### Added
+- v8, eight relation-first archetypes in `build_svg.py`, each with a sample,
+  theme support, content-fit inline sizing, the standard canvases and the
+  reveal animation: `cycle` (a loop), `before_after` (aligned old → new
+  pairs), `swimlane` (hand-offs between 2–4 actors), `decision` (questions
+  with labelled branches), `tree` (hierarchy with elbow connectors),
+  `quadrant` (3–10 points on two axes), `metrics` (KPI tiles and ranked bars)
+  and `layers` (nested boundaries). Chosen from the proposals of four
+  independent reviews (GPT-6 Astra ×2, Opus 5.5, Fable 5.1) and the owner's
+  pick.
+- `diagram-brief` routes relation first: a "Relation → diagram type" table
+  maps each relation to a native archetype, a Mermaid form, or a delegate
+  (diagram-design for funnel, Gantt, Sankey, Venn, real-data charts, big org
+  charts; drawio / archify for editable or explorable architecture), and the
+  brief records a runner-up and why it lost.
+
+### Changed
+- `matrix` is a ruled table: row labels as type, entries as text, hairlines
+  between rows, the highlight as the only fill — the card-in-band-in-card
+  layout is gone (a `layout` key is rejected).
+- `coral` is the editorial red-line direction: white page, flat square cards
+  with a 3:1 hairline, no shadow, red for step numbers, icons and bullets,
+  navy as the only fill, plain arrows instead of discs. Picked by the owner
+  from three candidates (red-line, warm paper, warm-grey band) rendered on
+  every archetype; a hallmark audit and two reviews found the old coral's
+  white-on-white cards and competing emphasis colours.
+
+### Removed
+- Slide mode: `show_title` / `--show-title` and the drawn title, subtitle,
+  kicker (`eyebrow`) and footer handle are gone from every compiler. Figures
+  are always inline; the title is the SVG `<title>` and alt text. A spec that
+  still sets `show_title`, a top-level `eyebrow` or `footer` fails with a
+  fix-it message.
+
 ## [0.2.0] - 2026-09-24
 
 Two new skills (`diagram-animate`, `diagram-design-system`), six themes, the

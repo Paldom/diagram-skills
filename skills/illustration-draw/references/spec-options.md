@@ -6,17 +6,34 @@ Loaded on demand from `SKILL.md`. Everything here is optional; `build_svg.py --s
 
 Every card uses one lockup: step number top-left (a badge on icon-less themes),
 icon top-right, label and detail anchored bottom-left, one label size per row.
-Optional spec keys: `show_title` (draw `title`/`subtitle`/`eyebrow` — off by
-default so the figure sits inline in an article; turn it on for slides and
-social cards, or pass `--show-title`), `eyebrow` (small uppercase kicker above the title),
-`numbered` (step numbers, default on for `flow`), `layout: "bus"` for `hub`
+Figures are always inline: `title` and `subtitle` become `<title>`/`<desc>`,
+never drawn (top-level `eyebrow`, `footer` and `show_title` are rejected).
+Optional spec keys: `numbered` (step numbers, default on for `flow`), `layout: "bus"` for `hub`
 (a horizontal bar with stops above and below — use it for buses, queues,
 platforms), `takeaway` (a full-width ink bar stating the conclusion), item
 `chips` (up to 3 mono identifiers such as `main` or `dev → stg → prod`).
 Tiered comparisons: per column `badge` (S/M/L) and `eyebrow` ("Ships in
-days"). `matrix` is the row-header layout: 2–4 `rows`, each a `header` and
-1–4 `cells` (`label`, `detail`, mono `eyebrow`, one `accent`). The highlight is whatever the design system says: a yellow card
-in Studio, an inverted card in paper-line, coral and studio-ink.
+days"). `matrix` is a ruled table: 2–4 `rows`, each a `header` and 1–4
+`cells` (`label`, `detail`, one `accent` fill; no card chrome). The highlight
+is whatever the design system says: a yellow card in Studio, an inverted card
+in paper-line, coral and studio-ink.
+
+## Relation-first archetypes (v8)
+
+Pick by the relation the takeaway states. `build_svg.py --sample` is not
+needed: every shape below has a working sample in `SAMPLES` (print one with
+`python3 -c 'import build_svg, json; print(json.dumps(build_svg.SAMPLES["cycle"]))'`).
+
+| Archetype | Shape of the spec |
+| --- | --- |
+| `cycle` | `items` 3–6 (`label`, `detail`, one `accent`), optional `center`; arcs run clockwise and the last returns to the first |
+| `before_after` | `before` / `after` headings, `pairs` 2–6 `{before, after, before_detail?, after_detail?, accent?}` — old cards quiet, new cards on the surface |
+| `swimlane` | `lanes` 2–4 names, `steps` 3–8 in order `{label, lane, detail?, accent?}` — same lane moves right, a hand-off drops in the same column |
+| `decision` | `root` `{question, branches: [{label, to}]}` down to leaves `{answer, detail?, accent?}` (≤ 4 levels, ≤ 7 answers) |
+| `tree` | `root` `{label, detail?, accent?, children}` (≤ 4 levels, ≤ 5 children each, ≤ 7 leaves) |
+| `quadrant` | `axes {x: [low, high], y: [low, high]}`, optional `quadrants` (4 corner names), `points` 3–10 `{label, x, y, accent?}` with x, y in 0–1 |
+| `metrics` | `kpis` 1–4 `{label, value, delta?, accent?}` and/or `bars.items` 2–8 `{label, value, display?, accent?}` — only numbers the brief supplies |
+| `layers` | `items` 2–5, outermost first; a highlighted ring fills only its label band |
 
 ## Icons and visuals beyond the built-in set
 

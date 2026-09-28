@@ -13,24 +13,21 @@ verified against primary sources on 2026-09-14.
    if the destination cannot show it.
 3. **Otherwise route by destination**, table below. An *inferred* preference
    (a prettier engine, a richer tool) never beats the destination.
-4. **Relations decide the ceiling of the illustration archetypes:** they express
-   order (flow), layering (stack), a center with satellites (hub), position on
-   two axes (grid), membership (compare) and time (timeline). Labeled, directed
-   edges between systems go to the **architecture** compiler in
-   `illustration-draw` when the destination is visual (post, slide, docs
-   image), to Mermaid when it is Markdown.
-5. **A type this repo does not draw goes to diagram-design, in the same theme.**
-   The compilers cover flow, stack, hub, grid, compare/tiers, matrix, timeline,
-   architecture and the pipeline explainer; `mermaid-draw` covers flowchart,
-   sequence, state, ER, class and DOT. Everything else in the table below
-   (swimlane, org chart, tree, Venn, pyramid/funnel, treemap, heatmap, charts,
-   Gantt, Sankey, fishbone, Wardley map, kanban, journey, radar, loop/flywheel,
-   deployment, DB schema, story map) → **diagram-design**
-   (`npx skills add cathrynlavery/diagram-design`). Export the active theme first:
-   `to_diagram_design.py --design-system <theme> --write --marker .` (in
-   `diagram-design-system`; it writes `~/.diagram-design/profiles/ds-<theme>.md`
-   and the project's `.diagram-design` marker — ask before running it). Never
-   bend a missing type into a near archetype.
+4. **Relation first, shape second.** Name the one relation the takeaway
+   states, then take the row below. Specificity wins: branches beat `flow`,
+   two or more actors beat `flow`, a return to the start is a `cycle`, numbers
+   that are the point are `metrics`. `flow` needs an explicit order in the
+   takeaway and `compare` explicit alternatives. The brief names **two
+   candidate types and why the runner-up lost**, and across one article no type
+   appears more than twice unless the brief says why.
+5. **Native when it fits, delegate when it doesn't — in the same theme.** The
+   compilers draw the native column; `mermaid-draw` the Mermaid column; the
+   rest goes to **diagram-design** (`npx skills add cathrynlavery/diagram-design`,
+   41 types) after exporting the theme with `to_diagram_design.py --design-system
+   <theme> --write --marker .` (in `diagram-design-system`; ask before it writes
+   `~/.diagram-design/profiles/` and the project marker). Editable output goes to
+   drawio-skill, an explorable architecture to archify. Never bend a missing
+   type into a near archetype.
 6. **Complexity gate:** more than ~12 entities never fits one view. Split by
    level (context → container → component, the C4 idea) or by phase, and say so
    in the brief. No layout engine keeps 25 nodes readable.
@@ -51,23 +48,33 @@ verified against primary sources on 2026-09-14.
 | A diagram type this repo does not draw (see precedence 5) | Delegate | diagram-design, with the theme exported as its profile | 41 types; the profile keeps the palette, fonts and one accent; fact-check every label |
 | Characters, scenes, brand illustration, photos, a full deck | Handoff | Claude Design `/design`, or a deck skill | Outside a minimalist technical diagram; do not fake it with boxes |
 
-## Idea shape → diagram type
+## Relation → diagram type
 
-| The idea is… | Mermaid | Illustration archetype |
-| --- | --- | --- |
-| steps or stages in order | `flowchart LR` | `flow` |
-| parties exchanging messages over time | `sequenceDiagram` (≤ 7 participants) | `flow` of the phases, or Mermaid |
-| named states and transitions | `stateDiagram-v2` | — (keep it Mermaid) |
-| tables, keys, cardinality | `erDiagram` (note: maid passes it through unvalidated; render to check) | — |
-| layers, tiers, levels | `flowchart TB` with subgraphs | `stack` |
-| one thing everything depends on | `flowchart` | `hub` |
-| a 2×2 tradeoff or quadrant | — | `grid` |
-| 2–3 options side by side | — | `compare` |
-| milestones in time | `timeline` or `gantt` | `timeline` |
-| data moving through stages: an explainer of how a system answers, with payloads and latencies | — | pipeline explainer (`pipeline_svg.py`), animated with `--preset pipeline` |
-| systems, boundaries, ordered calls between them | `flowchart LR` with subgraphs | architecture (`arch_svg.py`) |
-| a tree or dependency graph | DOT (`digraph`, `rankdir=LR`) | — |
-| lanes of responsibility, an org chart, Venn, funnel, treemap, heatmap, a chart (bar, line, scatter, waterfall), Gantt, Sankey, fishbone, Wardley map, kanban, journey, radar, flywheel, deployment, DB schema | — | — → **diagram-design** in the exported theme |
+| The takeaway's relation | Native archetype (`illustration-draw`) | Mermaid (`mermaid-draw`) | Delegate |
+| --- | --- | --- | --- |
+| order: steps in sequence | `flow` | `flowchart LR` | — |
+| loop: the last step feeds the first | `cycle` | — | — |
+| change: old → new, migration | `before_after` | — | — |
+| branch: if / otherwise, choose-when | `decision` | `flowchart TD` with a diamond | — |
+| ownership: hand-offs between actors | `swimlane` (≤ 4 lanes, ≤ 8 steps) | — | diagram-design swimlane when bigger |
+| hierarchy: breaks down into | `tree` (≤ 15 nodes) | — | diagram-design org chart / tree when bigger |
+| containment: runs inside, wraps | `layers` | — | diagram-design Venn for overlaps |
+| tiers / levels | `stack` | `flowchart TB` + subgraphs | diagram-design pyramid |
+| one center, satellites | `hub` (`layout: bus` for a bus or queue) | `flowchart` | — |
+| alternatives side by side | `compare` (tiers with badges) | — | — |
+| groups × items | `matrix` (ruled table) | — | — |
+| position on two axes | `grid` (exactly 2×2) or `quadrant` (3–10 points) | — | — |
+| magnitude: the numbers are the point | `metrics` (KPI tiles, ranked bars) | — | diagram-design bar / line / waterfall / heatmap for real data |
+| time: dated milestones | `timeline` | `timeline` | diagram-design Gantt / roadmap for durations and lanes |
+| reduction: counts shrink stage by stage | — | — | diagram-design funnel |
+| flow volume between parts | — | — | diagram-design Sankey |
+| messages between parties over time | — | `sequenceDiagram` (≤ 7 participants) | — |
+| named states and transitions | — | `stateDiagram-v2` | — |
+| tables, keys, cardinality | — | `erDiagram` | diagram-design DB schema |
+| data through stages, with payloads and latencies | pipeline explainer (`pipeline_svg.py`) | — | — |
+| systems, boundaries, ordered calls | architecture (`arch_svg.py`) | `flowchart LR` + subgraphs | archify (explorable), drawio (editable) |
+| a dependency graph with many nodes | — | DOT (`digraph`) | — |
+| causes, maps, boards: fishbone, Wardley, kanban, journey, radar | — | — | diagram-design |
 
 ## Handoff targets (verified 2026-09-14)
 

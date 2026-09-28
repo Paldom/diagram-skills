@@ -13,7 +13,7 @@ it in reading order. Pure stdlib.
 Spec (JSON, see --schema):
     {"archetype": "flow|compare|stack|hub|grid|timeline",
      "canvas": "social|wide|square", "title": "...", "subtitle": "...",
-     "footer": "...", "accent": "#RRGGBB" (optional override of the design system),
+     "accent": "#RRGGBB" (optional override of the design system),
      "items": [{"label": "...", "detail": "...", "icon": "database", "accent": true}],
      "center": "..." (hub), "columns": [{"heading": "...", "rows": ["..."]}] (compare),
      "axes": {"x": ["left", "right"], "y": ["bottom", "top"]} (grid)}
@@ -32,6 +32,7 @@ Exit 1 with `ERROR:` lines when the spec is invalid or over capacity.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import re
@@ -55,11 +56,18 @@ CAPACITY = {
     "compare": (2, 3),
     "timeline": (3, 12),
     "matrix": (2, 4),
+    "cycle": (3, 6),
+    "layers": (2, 5),
+    "before_after": (2, 6),
+    "swimlane": (3, 8),
+    "decision": (2, 7),
+    "tree": (2, 13),
+    "quadrant": (3, 10),
+    "metrics": (1, 12),
 }
 LIMITS = {
     "title": 70,
     "subtitle": 110,
-    "footer": 60,
     "label": 26,
     "detail": 60,
     "heading": 20,
@@ -232,7 +240,12 @@ def validate(spec: dict, tok: dict) -> tuple[dict, Style, tuple[int, int]] | Non
         err(
             "scale (the complexity mosaic) was removed — drop it; badges and eyebrows carry the tiers"
         )
-    for key in ("title", "subtitle", "footer", "center", "eyebrow"):
+    for key in ("show_title", "eyebrow", "footer"):
+        if key in spec:
+            err(
+                f"{key} was removed — figures are inline: the article carries the heading and credits"
+            )
+    for key in ("title", "subtitle", "center"):
         v = spec.get(key)
         if v is not None and not isinstance(v, str):
             err(f"{key} must be a string")
@@ -247,8 +260,6 @@ def validate(spec: dict, tok: dict) -> tuple[dict, Style, tuple[int, int]] | Non
         err(
             "title is required — it states the one takeaway (the SVG's accessible name and alt text)"
         )
-    if not isinstance(spec.get("show_title", False), bool):
-        err("show_title must be true or false")
     lo, hi = CAPACITY[arch]
     if arch == "matrix":
         rows = spec.get("rows")
@@ -280,6 +291,10 @@ def validate(spec: dict, tok: dict) -> tuple[dict, Style, tuple[int, int]] | Non
                 accents += bool(cell.get("accent"))
         if accents > 1:
             err("more than one cell marked accent — exactly one element carries the accent")
+        if "layout" in spec:
+            err("matrix has one layout (a ruled table) — drop layout")
+    elif arch in NEW_ARCHETYPES and arch not in ("cycle", "layers"):
+        validate_new(arch, spec)
     elif arch == "compare":
         cols = spec.get("columns")
         if not isinstance(cols, list) or not lo <= len(cols) <= hi:
@@ -360,59 +375,6 @@ def validate(spec: dict, tok: dict) -> tuple[dict, Style, tuple[int, int]] | Non
     if errors:
         return None
     return spec, Style(tok, accent), size
-
-
-def header(spec: dict, st: Style, W: int, m: float) -> tuple[list[str], float]:
-    """Eyebrow + title + subtitle; returns (svg parts, y where the body may start)."""
-    u, c, ty = st.u, st.c, st.ty
-    parts: list[str] = []
-    y = 56 * u
-    if spec.get("eyebrow"):
-        es = 16 * u
-        parts.append(t(m, y + es, [spec["eyebrow"].upper()], es, c["muted"], weight=600, track=0.1))
-        y += es + 16 * u
-    sizes = [int(v * u * st.k) for v in (46, 44, 40, 36)]
-    ft = fit(spec["title"], sizes, W - 2 * m, bold=True, max_lines=2)
-    if st.square:  # a square has height to spare: the largest size that wraps into two lines
-        ft = next((f for z in sizes if (f := fit(spec["title"], [z], W - 2 * m, True, 2))), ft)
-    if ft is None:
-        err("title does not fit in two lines even at the smallest size — shorten it")
-        return parts, 0
-    size, lines = ft
-    y += size * 0.9
-    parts.append(
-        t(
-            m,
-            y,
-            lines,
-            size,
-            c["ink"],
-            weight=ty["title-weight"],
-            track=ty["title-tracking"],
-            lh=1.12,
-        )
-    )
-    y += (len(lines) - 1) * size * 1.12
-    if spec.get("subtitle"):
-        sub = fit(spec["subtitle"], [int(21 * u), int(19 * u)], W - 2 * m, max_lines=2)
-        if sub is None:
-            err("subtitle does not fit — shorten it")
-            return parts, 0
-        ssize, slines = sub
-        y += ssize * 1.75
-        parts.append(t(m, y, slines, ssize, c["lede"], lh=1.35))
-        y += (len(slines) - 1) * ssize * 1.35
-    return parts, y + 40 * u
-
-
-def footer(spec: dict, st: Style, W: int, H: int, m: float) -> tuple[list[str], float]:
-    u = st.u
-    if not spec.get("footer") or not spec.get("show_title"):  # a handle/source is a slide device
-        return [], H - 48 * u
-    size = 16 * u
-    return [
-        t(W - m, H - 40 * u, [spec["footer"]], size, st.c["muted"], anchor="end", weight=500)
-    ], H - 40 * u - size * 2.2
 
 
 def mix(a: str, b: str, k: float) -> str:
@@ -577,6 +539,911 @@ def pill_bg(cx: float, base: float, lines: list[str], size: float, st: Style) ->
         f'<rect x="{cx - w / 2:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="{rx:.0f}" '
         f'fill="{st.c["accent"]}" data-accent="1"/>'
     )
+
+
+def cell_text(cell: dict, x: float, y: float, w: float, st: Style, ink: str, mut: str):
+    """Kicker, label and detail of one matrix entry, top-aligned at y; returns (parts, bottom)."""
+    u, c = st.u, st.c
+    parts: list[str] = []
+    if cell.get("eyebrow"):
+        ey = wrap(cell["eyebrow"], 14 * u, w, max_lines=1)
+        if ey is None:
+            return None, 0
+        y += 14 * u
+        parts.append(
+            t(x, y, ey, 14 * u, mut if ink != c["ink"] else c["lede"], weight=500, track=0.06)
+        )
+        y += 8 * u
+    lab = fit(cell["label"], [int(v * u) for v in (22, 21, 20, 19, 18)], w, bold=True)
+    if lab is None:
+        return None, 0
+    y += lab[0]
+    parts.append(t(x, y, lab[1], lab[0], ink, weight=st.bold, lh=1.15))
+    y += (len(lab[1]) - 1) * lab[0] * 1.15
+    if cell.get("detail"):
+        det = fit(cell["detail"], [int(v * u) for v in (17, 16, 15)], w, max_lines=2)
+        if det is None:
+            return None, 0
+        y += det[0] * 1.45
+        parts.append(t(x, y, det[1], det[0], mut, lh=1.3))
+        y += (len(det[1]) - 1) * det[0] * 1.3
+    return parts, y
+
+
+def matrix_table(spec: dict, st: Style, W: int, m: float, y0: float, y1: float) -> list[str]:
+    """A ruled ledger: row labels as type, entries as text, hairlines between rows, an ink rule
+    above and below, and the highlight as the only fill — no card-in-band-in-card chrome, so
+    it reads the same in every theme (chosen in v8 over columns and bands)."""
+    u, c = st.u, st.c
+    rows = spec["rows"]
+    out: list[str] = []
+    pad = 20 * u
+    hair = f'stroke="{c["border"]}" stroke-width="1"'
+    rule = f'stroke="{c["ink"]}" stroke-width="{1.5 * u:.1f}"'
+
+    def entry(cell, x, y, w):
+        acc = bool(cell.get("accent"))
+        return cell_text(
+            cell,
+            x,
+            y,
+            w,
+            st,
+            c["accent-ink"] if acc else c["ink"],
+            c["accent-muted"] if acc else c["muted"],
+        )
+
+    def fail(i, j=None):
+        where = f"rows[{i}]" + (f".cells[{j}]" if j is not None else ".header")
+        err(f"{where} does not fit the matrix — shorten it")
+        return []
+
+    lw = 190 * u
+    k = max(len(r["cells"]) for r in rows)
+    cw = (W - 2 * m - lw) / k
+    # measure every row at y=0 to get one uniform row height
+    hmax = 0.0
+    for i, r in enumerate(rows):
+        for j, cell in enumerate(r["cells"]):
+            parts, bottom = entry(cell, 0, 0, cw - 2 * pad)
+            if parts is None:
+                return fail(i, j)
+            hmax = max(hmax, bottom)
+    rh = hmax + 2 * pad + 4 * u
+    total = rh * len(rows)
+    top = y0 + (y1 - y0 - total) / 2
+    out.append(step(1, "group", [f'<path d="M{m:.0f},{top:.0f} H{W - m:.0f}" {rule}/>']))
+    for i, r in enumerate(rows):
+        ry = top + i * rh
+        parts = []
+        hl = fit(r["header"], [int(v * u) for v in (22, 21, 20, 19)], lw - pad, bold=True)
+        if hl is None:
+            return fail(i)
+        parts.append(t(m, ry + pad + hl[0], hl[1], hl[0], c["ink"], weight=st.bold, lh=1.15))
+        for j, cell in enumerate(r["cells"]):
+            x = m + lw + j * cw
+            if cell.get("accent"):
+                parts.append(
+                    f'<rect x="{x:.0f}" y="{ry + 1:.0f}" width="{cw:.0f}" height="{rh - 2:.0f}" '
+                    f'fill="{c["accent"]}" data-accent="1"/>'
+                )
+            cp, _ = entry(cell, x + pad, ry + pad, cw - 2 * pad)
+            parts += cp
+        last = i == len(rows) - 1
+        parts.append(f'<path d="M{m:.0f},{ry + rh:.0f} H{W - m:.0f}" {rule if last else hair}/>')
+        out.append(step(i + 2, "node", parts))
+    return out
+
+
+# --- v8 native archetypes: cycle, before_after, swimlane, decision, tree, quadrant, metrics, layers
+
+
+def node_text(x, y, w, h, label, detail, st, ink, mut, align="middle"):
+    """Label (+ detail) centred vertically in a box; (parts, ok)."""
+    u = st.u
+    pad = 16 * u
+    sizes = [int(v * u) for v in (22, 20, 19, 18)]
+    lab = next(
+        (f for z in sizes if (f := fit(label, [z], w - 2 * pad, True, 2))), None
+    )  # biggest first
+    if lab is None:
+        return [], False
+    det = (
+        fit(detail, [int(v * u) for v in (17, 16, 15)], w - 2 * pad, max_lines=2)
+        if detail
+        else None
+    )
+    if detail and det is None:
+        return [], False
+    block = lab[0] * 1.15 * len(lab[1]) + ((det[0] * 1.35 * len(det[1]) + 4 * u) if det else 0)
+    if block > h - 2 * 10 * u:
+        return [], False
+    tx = x + w / 2 if align == "middle" else x + pad
+    y0_ = y + (h - block) / 2 + lab[0] * 0.92
+    parts = [
+        t(tx, y0_, lab[1], lab[0], ink, align if align == "middle" else "start", st.bold, lh=1.15)
+    ]
+    if det:
+        dy = y0_ + (len(lab[1]) - 1) * lab[0] * 1.15 + det[0] * 1.45
+        parts.append(
+            t(tx, dy, det[1], det[0], mut, align if align == "middle" else "start", lh=1.35)
+        )
+    return parts, True
+
+
+def node(x, y, w, h, label, detail, st, kind="surface", align="middle"):
+    """A card: kind surface | tile | accent. None (with an error) if the text cannot fit."""
+    c = st.c
+    if kind == "accent":
+        parts = [box(x, y, w, h, st, True)]
+        ink, mut = c["accent-ink"], c["accent-muted"]
+    elif kind == "tile":
+        tile = c["tile"] if c["tile"].upper() not in (c["canvas"].upper(),) else c["subtle"]
+        border = (
+            f' stroke="{c["border"]}" stroke-width="1"'
+            if st.sh["card-border"] == "hairline"
+            else ""
+        )
+        parts = [
+            f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="{st.sh["radius"]}" fill="{tile}"{border}/>'
+        ]
+        ink, mut = c["ink"], c["muted"]
+    else:
+        parts = [box(x, y, w, h, st, False)]
+        ink, mut = c["ink"], c["muted"]
+    tp, ok = node_text(x, y, w, h, label, detail, st, ink, mut, align)
+    if not ok:
+        err(f"{label!r} does not fit its box — shorten the label or detail")
+        return None
+    return parts + tp
+
+
+def path_arrow(d: str, st: Style) -> str:
+    return (
+        f'<path d="{d}" fill="none" stroke="{st.c["line"]}" stroke-width="{st.sh["stroke-strong"]}" '
+        f'stroke-linecap="round" stroke-linejoin="round"{st.marker} data-draw="1"/>'
+    )
+
+
+def cycle(spec, st, W, m, y0, y1):
+    """Stages on an ellipse, joined clockwise by arcs; the last returns to the first."""
+    u = st.u
+    items = spec["items"]
+    n = len(items)
+    nw, nh = 230 * u, 96 * u
+    cx, cy = W / 2, (y0 + y1) / 2
+    rx = min((W - 2 * m - nw) / 2, 420 * u)
+    ry = max(90 * u, (y1 - y0 - nh) / 2 - 8 * u)
+    pts = [
+        (
+            cx + rx * math.cos(-math.pi / 2 + 2 * math.pi * i / n),
+            cy + ry * math.sin(-math.pi / 2 + 2 * math.pi * i / n),
+        )
+        for i in range(n)
+    ]
+    out = []
+    if spec.get("center"):
+        cl = fit(
+            spec["center"], [int(v * u) for v in (24, 22, 20)], rx * 1.1, bold=True, max_lines=2
+        )
+        if cl is None:
+            err("center does not fit inside the cycle — shorten it")
+            return []
+        out.append(
+            step(
+                1,
+                "group",
+                [
+                    t(
+                        cx,
+                        cy + cl[0] * 0.35 - (len(cl[1]) - 1) * cl[0] * 0.6,
+                        cl[1],
+                        cl[0],
+                        st.c["muted"],
+                        "middle",
+                        600,
+                        lh=1.2,
+                    )
+                ],
+            )
+        )
+
+    def inside(p, k, padd=8 * u):
+        return abs(p[0] - pts[k][0]) <= nw / 2 + padd and abs(p[1] - pts[k][1]) <= nh / 2 + padd
+
+    def at(a):
+        return (cx + rx * math.cos(a), cy + ry * math.sin(a))
+
+    for i in range(n):
+        j = (i + 1) % n
+        a0 = -math.pi / 2 + 2 * math.pi * i / n
+        a1 = a0 + 2 * math.pi / n
+        s0, s1 = a0, a1
+        for kk in range(400):  # walk off both cards along the ellipse
+            s0 = a0 + (a1 - a0) * kk / 400
+            if not inside(at(s0), i):
+                break
+        for kk in range(400):
+            s1 = a1 - (a1 - a0) * kk / 400
+            if not inside(at(s1), j, 12 * u):
+                break
+        (x0, y0_), (x1, y1_) = at(s0), at(s1)
+        out.append(
+            step(
+                i + 2,
+                "edge",
+                [
+                    path_arrow(
+                        f"M{x0:.1f},{y0_:.1f} A{rx:.1f} {ry:.1f} 0 0 1 {x1:.1f},{y1_:.1f}", st
+                    )
+                ],
+            )
+        )
+    for i, (it, (px, py)) in enumerate(zip(items, pts, strict=True)):
+        parts = node(
+            px - nw / 2,
+            py - nh / 2,
+            nw,
+            nh,
+            it["label"],
+            it.get("detail"),
+            st,
+            "accent" if it.get("accent") else "surface",
+        )
+        if parts is None:
+            return []
+        out.append(step(i + 2, "node", parts))
+    return out
+
+
+def before_after(spec, st, W, m, y0, y1):
+    """Two states of the same parts: pairs aligned in rows, an arrow between each."""
+    u, c = st.u, st.c
+    pairs = spec["pairs"]
+    gap = 96 * u
+    cw = (W - 2 * m - gap) / 2
+    hs = 20 * u
+    head_h = hs * 2.2
+    rh = 84 * u
+    rg = 14 * u
+    total = head_h + len(pairs) * rh + (len(pairs) - 1) * rg
+    top = y0 + (y1 - y0 - total) / 2
+    out = [
+        step(
+            1,
+            "group",
+            [
+                t(
+                    m,
+                    top + hs,
+                    [spec.get("before", "Before")],
+                    hs,
+                    c["muted"],
+                    weight=600,
+                    track=0.06,
+                ),
+                t(
+                    m + cw + gap,
+                    top + hs,
+                    [spec.get("after", "After")],
+                    hs,
+                    c["ink"],
+                    weight=st.bold,
+                    track=0.06,
+                ),
+                f'<path d="M{m:.0f},{top + head_h - 12 * u:.0f} H{m + cw:.0f}" stroke="{c["border"]}" stroke-width="1"/>',
+                f'<path d="M{m + cw + gap:.0f},{top + head_h - 12 * u:.0f} H{W - m:.0f}" stroke="{c["ink"]}" stroke-width="{1.5 * u:.1f}"/>',
+            ],
+        )
+    ]
+    for i, p in enumerate(pairs):
+        y = top + head_h + i * (rh + rg)
+        left = node(m, y, cw, rh, p["before"], p.get("before_detail"), st, "tile", "start")
+        right = node(
+            m + cw + gap,
+            y,
+            cw,
+            rh,
+            p["after"],
+            p.get("after_detail"),
+            st,
+            "accent" if p.get("accent") else "surface",
+            "start",
+        )
+        if left is None or right is None:
+            return []
+        out.append(
+            step(
+                i + 2,
+                "node",
+                [
+                    *left,
+                    arrow(m + cw + 18 * u, y + rh / 2, m + cw + gap - 18 * u, y + rh / 2, st),
+                    *right,
+                ],
+            )
+        )
+    return out
+
+
+def swimlane(spec, st, W, m, y0, y1):
+    """Lanes as bands; a step in the same lane moves right, a hand-off drops into the next lane
+    in the same column, so every arrow is straight."""
+    u, c = st.u, st.c
+    lanes = spec["lanes"]
+    steps_ = spec["steps"]
+    lane_of = [
+        s_["lane"] if isinstance(s_["lane"], int) else lanes.index(s_["lane"]) for s_ in steps_
+    ]
+    col = [0]
+    for i in range(1, len(steps_)):
+        col.append(col[-1] + (1 if lane_of[i] == lane_of[i - 1] else 0))
+    ncol = col[-1] + 1
+    lw = 190 * u
+    area = W - 2 * m - lw
+    colw = area / ncol
+    nw = min(250 * u, colw - 36 * u)
+    nh = 78 * u
+    lh = nh + 40 * u
+    total = lh * len(lanes)
+    top = y0 + (y1 - y0 - total) / 2
+    hair = f'stroke="{c["border"]}" stroke-width="1"'
+    grid_ = [
+        f'<path d="M{m:.0f},{top:.0f} H{W - m:.0f}" stroke="{c["ink"]}" stroke-width="{1.5 * u:.1f}"/>'
+    ]
+    for k, name in enumerate(lanes):
+        ly = top + k * lh
+        ll = fit(name, [int(v * u) for v in (19, 18, 17, 16)], lw - 24 * u, bold=True, max_lines=2)
+        if ll is None:
+            err(f"lanes[{k}] does not fit — shorten it")
+            return []
+        grid_.append(
+            t(
+                m,
+                ly + lh / 2 + ll[0] * 0.35 - (len(ll[1]) - 1) * ll[0] * 0.6,
+                ll[1],
+                ll[0],
+                c["ink"],
+                weight=st.bold,
+                lh=1.2,
+            )
+        )
+        last = k == len(lanes) - 1
+        grid_.append(
+            f'<path d="M{m:.0f},{ly + lh:.0f} H{W - m:.0f}" {("stroke=" + chr(34) + c["ink"] + chr(34) + " stroke-width=" + chr(34) + f"{1.5 * u:.1f}" + chr(34)) if last else hair}/>'
+        )
+    grid_.append(f'<path d="M{m + lw - 16 * u:.0f},{top:.0f} V{top + total:.0f}" {hair}/>')
+    out = [step(1, "group", grid_)]
+    boxes = []
+    for i, s_ in enumerate(steps_):
+        x = m + lw + col[i] * colw + (colw - nw) / 2
+        y = top + lane_of[i] * lh + (lh - nh) / 2
+        boxes.append((x, y))
+        parts = node(
+            x,
+            y,
+            nw,
+            nh,
+            s_["label"],
+            s_.get("detail"),
+            st,
+            "accent" if s_.get("accent") else "surface",
+        )
+        if parts is None:
+            return []
+        if i:
+            px, py = boxes[i - 1]
+            if lane_of[i] == lane_of[i - 1]:
+                parts.insert(0, arrow(px + nw + 6 * u, py + nh / 2, x - 8 * u, y + nh / 2, st))
+            else:
+                down = lane_of[i] > lane_of[i - 1]
+                ya, yb = (py + nh + 6 * u, y - 8 * u) if down else (py - 6 * u, y + nh + 8 * u)
+                parts.insert(0, arrow(px + nw / 2, ya, x + nw / 2, yb, st))
+        out.append(step(i + 2, "node", parts))
+    return out
+
+
+def tree_layout(root, children_key):
+    """Tidy positions: leaves take consecutive slots, a parent sits over its children."""
+    levels: list[list] = []
+    slots = [0]
+
+    def walk(nd, depth):
+        kids = [(lab, k) for lab, k in children_key(nd)]
+        if len(levels) <= depth:
+            levels.append([])
+        if not kids:
+            pos = slots[0]
+            slots[0] += 1
+        else:
+            ps = [walk(k, depth + 1) for _, k in kids]
+            pos = (ps[0] + ps[-1]) / 2
+        levels[depth].append((nd, pos, depth))
+        nd["_pos"], nd["_depth"] = pos, depth
+        return pos
+
+    walk(root, 0)
+    return levels, slots[0]
+
+
+def draw_tree(spec, st, W, m, y0, y1, root, children_key, kind_of, label_of):
+    u, c = st.u, st.c
+    levels, nleaf = tree_layout(root, children_key)
+    slot = (W - 2 * m) / max(nleaf, 1)
+    nw = min(240 * u, slot - 24 * u)
+    nh = 82 * u
+    vgap = 70 * u
+    total = len(levels) * nh + (len(levels) - 1) * vgap
+    top = y0 + (y1 - y0 - total) / 2
+    out = []
+    stepn = 1
+
+    width = {}  # a level with fewer nodes gets wider boxes, up to its spacing
+    for lvl in levels:
+        ps = sorted(p for _, p, _ in lvl)
+        room = min((b - a for a, b in itertools.pairwise(ps)), default=nleaf) * slot
+        for nd, _, _ in lvl:
+            width[id(nd)] = max(nw, min(280 * u, room - 28 * u))
+
+    def xy(nd):
+        w_ = width[id(nd)]
+        return m + nd["_pos"] * slot + (slot - w_) / 2, top + nd["_depth"] * (nh + vgap)
+
+    def emit(nd):
+        nonlocal stepn
+        x, y = xy(nd)
+        w_ = width[id(nd)]
+        lab, det = label_of(nd)
+        parts = node(x, y, w_, nh, lab, det, st, kind_of(nd))
+        if parts is None:
+            raise ValueError
+        for blab, k in children_key(nd):
+            kx, ky = xy(k)
+            kw_ = width[id(k)]
+            mid = y + nh + vgap / 2
+            d = f"M{x + w_ / 2:.1f},{y + nh:.1f} V{mid:.1f} H{kx + kw_ / 2:.1f} V{ky - 8 * u:.1f}"
+            parts.insert(0, path_arrow(d, st))
+            if blab:
+                bs = 16 * u
+                bw = text_w(blab, bs, True) + 16 * u
+                parts.append(
+                    f'<rect x="{kx + kw_ / 2 - bw / 2:.0f}" y="{mid + 6 * u:.0f}" width="{bw:.0f}" height="{bs * 1.6:.0f}" '
+                    f'rx="{bs * 0.8:.0f}" fill="{c["canvas"]}"/>'
+                )
+                parts.append(
+                    t(
+                        kx + kw_ / 2,
+                        mid + 6 * u + bs * 1.15,
+                        [blab],
+                        bs,
+                        c["muted"],
+                        "middle",
+                        600,
+                        0.05,
+                    )
+                )
+        out.append(step(stepn, "node", parts))
+        stepn += 1
+        for _, k in children_key(nd):
+            emit(k)
+
+    try:
+        emit(root)
+    except ValueError:
+        return []
+    return out
+
+
+def decision(spec, st, W, m, y0, y1):
+    """Questions branch on labelled edges down to answers; one answer may be the highlight."""
+
+    def kids(nd):
+        return [(b["label"], b["to"]) for b in nd.get("branches", [])]
+
+    return draw_tree(
+        spec,
+        st,
+        W,
+        m,
+        y0,
+        y1,
+        spec["root"],
+        kids,
+        lambda nd: "accent" if nd.get("accent") else ("tile" if "question" in nd else "surface"),
+        lambda nd: (nd.get("question") or nd.get("answer"), nd.get("detail")),
+    )
+
+
+def tree(spec, st, W, m, y0, y1):
+    """A hierarchy: parent over children with elbow connectors (org chart, taxonomy)."""
+
+    def kids(nd):
+        return [(None, k) for k in nd.get("children", [])]
+
+    return draw_tree(
+        spec,
+        st,
+        W,
+        m,
+        y0,
+        y1,
+        spec["root"],
+        kids,
+        lambda nd: "accent" if nd.get("accent") else ("tile" if nd is spec["root"] else "surface"),
+        lambda nd: (nd["label"], nd.get("detail")),
+    )
+
+
+def quadrant(spec, st, W, m, y0, y1):
+    """Points placed on two axes; quadrant names in the corners, one point may be the highlight."""
+    u, c = st.u, st.c
+    ax = spec["axes"]
+    lab_pad = 34 * u
+    x0, x1 = m + lab_pad, W - m
+    py0, py1 = y0, y1 - lab_pad
+    ph = max(260 * u, py1 - py0)
+    py1 = py0 + ph
+    hair = f'stroke="{c["border"]}" stroke-width="1"'
+    frame = [
+        f'<rect x="{x0:.0f}" y="{py0:.0f}" width="{x1 - x0:.0f}" height="{ph:.0f}" fill="{c["surface"]}" {hair}/>',
+        f'<path d="M{(x0 + x1) / 2:.0f},{py0:.0f} V{py1:.0f} M{x0:.0f},{(py0 + py1) / 2:.0f} H{x1:.0f}" {hair}/>',
+    ]
+    s_ = 16 * u
+    frame += [
+        t(x0, py1 + 24 * u, [ax["x"][0].upper()], s_, c["muted"], weight=600, track=0.08),
+        t(x1, py1 + 24 * u, [ax["x"][1].upper()], s_, c["muted"], "end", 600, 0.08),
+        f'<text x="{m + 8 * u:.0f}" y="{py1:.0f}" font-size="{s_:.0f}" fill="{c["muted"]}" font-weight="600" '
+        f'transform="rotate(-90 {m + 8 * u:.0f} {py1:.0f})">{escape(ax["y"][0].upper())}</text>',
+        f'<text x="{m + 8 * u:.0f}" y="{py0:.0f}" font-size="{s_:.0f}" fill="{c["muted"]}" font-weight="600" text-anchor="end" '
+        f'transform="rotate(-90 {m + 8 * u:.0f} {py0:.0f})">{escape(ax["y"][1].upper())}</text>',
+    ]
+    for q, (qx, qy, anchor) in zip(
+        spec.get("quadrants", []),
+        [
+            (x0 + 14 * u, py0 + 26 * u, "start"),
+            (x1 - 14 * u, py0 + 26 * u, "end"),
+            (x0 + 14 * u, py1 - 14 * u, "start"),
+            (x1 - 14 * u, py1 - 14 * u, "end"),
+        ],
+        strict=False,
+    ):
+        frame.append(t(qx, qy, [q], 17 * u, c["muted"], anchor, 600))
+    out = [step(1, "group", frame)]
+    placed: list[tuple] = []
+    ls = 19 * u
+    for i, p in enumerate(spec["points"]):
+        px = x0 + p["x"] * (x1 - x0)
+        py = py1 - p["y"] * ph
+        acc = bool(p.get("accent"))
+        r = 9 * u if acc else 7 * u
+        lw_ = text_w(p["label"], ls, True)
+        off = r + (22 if acc else 8) * u  # a highlighted label sits in a pill, clear of its dot
+        cands = [
+            (px + off, py + ls * 0.35, "start"),
+            (px - off, py + ls * 0.35, "end"),
+            (px, py - r - 8 * u, "middle"),
+            (px, py + r + ls + 4 * u, "middle"),
+        ]
+        best = cands[0]
+        for cx_, cy_, an in cands:
+            bx0 = cx_ if an == "start" else cx_ - lw_ if an == "end" else cx_ - lw_ / 2
+            bb = (bx0, cy_ - ls, bx0 + lw_, cy_ + 4 * u)
+            if (
+                bb[0] < x0 + 4 * u
+                or bb[2] > x1 - 4 * u
+                or bb[1] < py0 + 4 * u
+                or bb[3] > py1 - 4 * u
+            ):
+                continue
+            if any(
+                not (bb[2] < o[0] or o[2] < bb[0] or bb[3] < o[1] or o[3] < bb[1]) for o in placed
+            ):
+                continue
+            best = (cx_, cy_, an)
+            placed.append(bb)
+            break
+        else:
+            err(
+                f"points[{i}] {p['label']!r} collides with another label — move it or shorten the labels"
+            )
+            return []
+        dot = f'<circle cx="{px:.0f}" cy="{py:.0f}" r="{r:.1f}" fill="{c["accent"] if acc else c["ink"]}"'
+        dot += (
+            f' stroke="{c["ink"]}" stroke-width="{1.5 * u:.1f}" data-accent="1"/>' if acc else "/>"
+        )
+        parts = [dot]
+        if acc:
+            parts.append(
+                pill_bg(
+                    best[0]
+                    + (lw_ / 2 if best[2] == "start" else -lw_ / 2 if best[2] == "end" else 0),
+                    best[1],
+                    [p["label"]],
+                    ls,
+                    st,
+                )
+            )
+        parts.append(
+            t(
+                best[0],
+                best[1],
+                [p["label"]],
+                ls,
+                c["accent-ink"] if acc else c["ink"],
+                best[2],
+                st.bold,
+            )
+        )
+        out.append(step(i + 2, "node", parts))
+    return out
+
+
+def metrics(spec, st, W, m, y0, y1):
+    """A KPI row (value, label, change) over a ranked bar list; one tile or bar may be the highlight."""
+    u, c = st.u, st.c
+    out = []
+    kpis = spec.get("kpis", [])
+    bars = (spec.get("bars") or {}).get("items", [])
+    kh = (158 if any(k.get("delta") for k in kpis) else 128) * u if kpis else 0
+    bh, bg = 30 * u, 16 * u
+    bars_h = len(bars) * (bh + bg) - bg if bars else 0
+    gap = 44 * u if kpis and bars else 0
+    total = kh + gap + bars_h
+    top = y0 + (y1 - y0 - total) / 2
+    stepn = 1
+    if kpis:
+        g = 20 * u
+        kw = (W - 2 * m - (len(kpis) - 1) * g) / len(kpis)
+        for i, k in enumerate(kpis):
+            x = m + i * (kw + g)
+            acc = bool(k.get("accent"))
+            ink, mut = (c["accent-ink"], c["accent-muted"]) if acc else (c["ink"], c["muted"])
+            parts = [box(x, top, kw, kh, st, acc)]
+            pad = 22 * u
+            ly = top + pad + 16 * u
+            parts.append(t(x + pad, ly, [k["label"].upper()], 16 * u, mut, weight=600, track=0.08))
+            vs = fit(k["value"], [int(v * u) for v in (46, 42, 38, 34)], kw - 2 * pad, bold=True)
+            if vs is None:
+                err(f"kpis[{i}].value does not fit — shorten it")
+                return []
+            vy = ly + 14 * u + vs[0] * 0.95
+            parts.append(t(x + pad, vy, vs[1], vs[0], ink, weight=st.bold))
+            if k.get("delta"):
+                parts.append(t(x + pad, vy + 30 * u, [k["delta"]], 17 * u, mut, weight=500))
+            out.append(step(stepn, "node", parts))
+            stepn += 1
+    if bars:
+        by = top + kh + gap
+        lw = max(text_w(b["label"], 18 * u, True) for b in bars) + 24 * u
+        lw = min(lw, 300 * u)
+        vw = max(text_w(b.get("display") or f"{b['value']:g}", 18 * u, True) for b in bars) + 16 * u
+        span = W - 2 * m - lw - vw
+        vmax = max(b["value"] for b in bars) or 1
+        for i, b in enumerate(bars):
+            y = by + i * (bh + bg)
+            acc = bool(b.get("accent"))
+            blen = max(4 * u, span * b["value"] / vmax)
+            lab = fit(b["label"], [int(v * u) for v in (18, 17, 16)], lw - 16 * u, bold=True)
+            if lab is None:
+                err(f"bars.items[{i}].label does not fit — shorten it")
+                return []
+            fill = c["accent"] if acc else c["line"]
+            parts = [
+                t(m, y + bh / 2 + lab[0] * 0.35, lab[1], lab[0], c["ink"], weight=st.bold),
+                f'<rect x="{m + lw:.0f}" y="{y:.0f}" width="{blen:.0f}" height="{bh:.0f}" rx="{min(st.sh["radius-small"], bh / 2)}" fill="{fill}"'
+                + (' data-accent="1"/>' if acc else "/>"),
+                t(
+                    m + lw + blen + 10 * u,
+                    y + bh / 2 + 18 * u * 0.35,
+                    [b.get("display") or f"{b['value']:g}"],
+                    18 * u,
+                    c["ink"],
+                    weight=st.bold,
+                ),
+            ]
+            out.append(step(stepn, "node", parts))
+            stepn += 1
+    return out
+
+
+def layers(spec, st, W, m, y0, y1):
+    """Nested boundaries, outermost first: each layer names its ring, the core sits inside all."""
+    u, c = st.u, st.c
+    items = spec["items"]
+    n = len(items)
+    band, side, bottom = 58 * u, 34 * u, 22 * u
+    core_h = 96 * u
+    total = n * band + core_h + (n - 1) * bottom
+    top = y0 + (y1 - y0 - total) / 2
+    tones = [c["group"] if c["group"].upper() != c["canvas"].upper() else c["tile"], c["surface"]]
+    out = []
+    x, y, w, h = m, top, W - 2 * m, total
+    hair = f' stroke="{c["border"]}" stroke-width="1"'
+    for i, it in enumerate(items):
+        acc = bool(it.get("accent"))
+        core = i == n - 1
+        fill = c["accent"] if acc and core else tones[i % 2]
+        ink, mut = (c["accent-ink"], c["accent-muted"]) if acc else (c["ink"], c["muted"])
+        parts = [
+            f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="{st.sh["radius"]}" fill="{fill}"{hair}'
+            + (' data-accent="1"/>' if acc and core else "/>")
+        ]
+        if acc and not core:  # a highlighted ring fills only its label band, not everything inside
+            parts.append(
+                f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{band:.0f}" rx="{st.sh["radius"]}" '
+                f'fill="{c["accent"]}" data-accent="1"/>'
+            )
+        if core:
+            tp, ok = node_text(x, y, w, h, it["label"], it.get("detail"), st, ink, mut)
+            if not ok:
+                err(f"items[{i}] does not fit the core — shorten it")
+                return []
+            parts += tp
+        else:
+            ls = 20 * u
+            lab = fit(it["label"], [int(ls), int(ls * 0.9)], w * 0.45, bold=True)
+            if lab is None:
+                err(f"items[{i}].label does not fit — shorten it")
+                return []
+            parts.append(
+                t(x + 22 * u, y + band / 2 + lab[0] * 0.35, lab[1], lab[0], ink, weight=st.bold)
+            )
+            if it.get("detail"):
+                dx = x + 22 * u + text_w(lab[1][0], lab[0], True) + 16 * u
+                det = fit(it["detail"], [int(17 * u), int(16 * u)], x + w - 22 * u - dx)
+                if det is None:
+                    err(f"items[{i}].detail does not fit — shorten it")
+                    return []
+                parts.append(t(dx, y + band / 2 + det[0] * 0.35, det[1], det[0], mut))
+        out.append(step(i + 1, "group" if not core else "node", parts))
+        x, y, w, h = x + side, y + band, w - 2 * side, h - band - bottom
+        if not core and (w < 200 * u or h < core_h * 0.8):
+            err("too many layers for the canvas — use at most 5 or a wider canvas")
+            return []
+    return out
+
+
+NEW_ARCHETYPES = {
+    "cycle": cycle,
+    "before_after": before_after,
+    "swimlane": swimlane,
+    "decision": decision,
+    "tree": tree,
+    "quadrant": quadrant,
+    "metrics": metrics,
+    "layers": layers,
+}
+
+
+def validate_new(arch: str, spec: dict) -> None:
+    """Shape checks for the v8 archetypes (errors via err())."""
+
+    def s(v, lim):
+        return isinstance(v, str) and len(v.strip()) > 0 and len(v) <= lim
+
+    if arch in ("cycle", "layers"):
+        return  # items are validated with the item archetypes
+    if arch == "before_after":
+        pairs = spec.get("pairs")
+        if not isinstance(pairs, list) or not 2 <= len(pairs) <= 6:
+            err("before_after needs 2-6 pairs of {before, after}")
+            return
+        for i, p in enumerate(pairs):
+            if not (isinstance(p, dict) and s(p.get("before"), 40) and s(p.get("after"), 40)):
+                err(f"pairs[{i}] needs before and after strings of at most 40 chars")
+        if sum(bool(p.get("accent")) for p in pairs if isinstance(p, dict)) > 1:
+            err("at most one pair may be the accent")
+    elif arch == "swimlane":
+        lanes, steps_ = spec.get("lanes"), spec.get("steps")
+        if not (isinstance(lanes, list) and 2 <= len(lanes) <= 4 and all(s(x, 24) for x in lanes)):
+            err("swimlane needs 2-4 lane names of at most 24 chars")
+            return
+        if not isinstance(steps_, list) or not 3 <= len(steps_) <= 8:
+            err("swimlane needs 3-8 steps in order")
+            return
+        for i, st_ in enumerate(steps_):
+            ln = st_.get("lane") if isinstance(st_, dict) else None
+            if not (isinstance(st_, dict) and s(st_.get("label"), 26)) or not (
+                (isinstance(ln, int) and 0 <= ln < len(lanes)) or ln in lanes
+            ):
+                err(f"steps[{i}] needs a label (<= 26 chars) and a lane (index or name)")
+    elif arch in ("decision", "tree"):
+        count = [0, 0]
+
+        def walk(nd, depth, path):
+            if not isinstance(nd, dict):
+                err(f"{path} must be an object")
+                return
+            count[0] += 1
+            if depth > 3:
+                err(f"{path} is deeper than 4 levels — split the tree")
+                return
+            if arch == "decision":
+                if "branches" in nd:
+                    if not s(nd.get("question"), 50):
+                        err(f"{path}.question must be at most 50 chars")
+                    br = nd["branches"]
+                    if not isinstance(br, list) or not 2 <= len(br) <= 3:
+                        err(f"{path}.branches needs 2-3 entries")
+                        return
+                    for j, b in enumerate(br):
+                        if not (isinstance(b, dict) and s(b.get("label"), 12) and "to" in b):
+                            err(f"{path}.branches[{j}] needs a label (<= 12 chars) and a to node")
+                            continue
+                        walk(b["to"], depth + 1, f"{path}.branches[{j}].to")
+                else:
+                    count[1] += 1
+                    if not s(nd.get("answer"), 40):
+                        err(f"{path} needs an answer (<= 40 chars) or a question with branches")
+            else:
+                if not s(nd.get("label"), 26):
+                    err(f"{path}.label must be at most 26 chars")
+                ch = nd.get("children", [])
+                if not isinstance(ch, list) or len(ch) > 5:
+                    err(f"{path}.children takes at most 5 nodes")
+                    return
+                if not ch:
+                    count[1] += 1
+                for j, k in enumerate(ch):
+                    walk(k, depth + 1, f"{path}.children[{j}]")
+
+        walk(spec.get("root"), 0, "root")
+        if count[1] > 7:
+            err(f"{arch} has {count[1]} leaves — at most 7 fit side by side; split it")
+        if count[0] > 15:
+            err(f"{arch} has {count[0]} nodes — at most 15; split it")
+    elif arch == "quadrant":
+        ax = spec.get("axes")
+        if not (
+            isinstance(ax, dict)
+            and all(
+                isinstance(ax.get(k), list) and len(ax[k]) == 2 and all(s(v, 22) for v in ax[k])
+                for k in ("x", "y")
+            )
+        ):
+            err('quadrant needs axes {"x": [low, high], "y": [low, high]} (<= 22 chars each)')
+        q = spec.get("quadrants", [])
+        if not (isinstance(q, list) and len(q) in (0, 4) and all(s(v, 26) for v in q)):
+            err(
+                "quadrants must be 4 names (top-left, top-right, bottom-left, bottom-right) of at most 26 chars"
+            )
+        pts = spec.get("points")
+        if not isinstance(pts, list) or not 3 <= len(pts) <= 10:
+            err("quadrant needs 3-10 points")
+            return
+        for i, p in enumerate(pts):
+            if not (
+                isinstance(p, dict)
+                and s(p.get("label"), 22)
+                and all(isinstance(p.get(k), (int, float)) and 0 <= p[k] <= 1 for k in ("x", "y"))
+            ):
+                err(f"points[{i}] needs a label (<= 22 chars) and x, y between 0 and 1")
+        if sum(bool(p.get("accent")) for p in pts if isinstance(p, dict)) > 1:
+            err("at most one point may be the accent")
+    elif arch == "metrics":
+        kpis = spec.get("kpis", [])
+        bars = (spec.get("bars") or {}).get("items", [])
+        if not kpis and not bars:
+            err("metrics needs kpis (1-4) and/or bars.items (2-8)")
+            return
+        if not isinstance(kpis, list) or len(kpis) > 4:
+            err("kpis takes 1-4 tiles")
+        for i, k in enumerate(kpis):
+            if not (isinstance(k, dict) and s(k.get("label"), 24) and s(k.get("value"), 10)):
+                err(f"kpis[{i}] needs a label (<= 24) and a value string (<= 10, e.g. '42 ms')")
+        if bars and not 2 <= len(bars) <= 8:
+            err("bars.items takes 2-8 bars")
+        for i, b in enumerate(bars):
+            if not (
+                isinstance(b, dict)
+                and s(b.get("label"), 28)
+                and isinstance(b.get("value"), (int, float))
+                and b["value"] >= 0
+            ):
+                err(f"bars.items[{i}] needs a label (<= 28 chars) and a non-negative number value")
+        acc = sum(bool(x.get("accent")) for x in [*kpis, *bars] if isinstance(x, dict))
+        if acc > 1:
+            err("at most one tile or bar may be the accent")
 
 
 def compare_square(spec: dict, st: Style, W: int, m: float, y0: float, y1: float) -> list[str]:
@@ -847,7 +1714,7 @@ def build(spec: dict, st: Style, size: tuple[int, int]) -> str | None:
     """An inline figure (no drawn title, no canvas asked for) is as tall as its content plus
     the margins; a slide or an explicit canvas keeps the fixed preset size."""
     svg = build_fixed(spec, st, size)
-    if not svg or spec.get("show_title") or "canvas" in spec:
+    if not svg or "canvas" in spec:
         return svg
     W, H = size
     u = st.u
@@ -898,7 +1765,7 @@ def content_box(svg: str, W: float, H: float) -> tuple[float, float, float, floa
             elif tag == "circle":
                 cy, r = float(e.get("cy", 0)), float(e.get("r", 0))
                 ys.extend((cy - r, cy + r))
-            elif tag == "path" and not re.search(r"[a-zHV]", e.get("d", "")):
+            elif tag == "path" and not re.search(r"[a-zHVA]", e.get("d", "")):
                 nums = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", e.get("d", ""))]
                 ys.extend(nums[1::2])
             elif tag == "path":  # H/V/relative paths: take the absolute y values we can read
@@ -938,10 +1805,10 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
     u = st.u
     m = 64 * u
     c = st.c
-    # inline by default: the article around the figure carries the heading, so the title and
-    # subtitle only become <title>/<desc>; show_title draws them for a slide or a social card
-    top_parts, y0 = header(spec, st, W, m) if spec.get("show_title") else ([], m)
-    foot_parts, y1 = footer(spec, st, W, H, m)
+    # figures are inline: the article carries the heading, the title is only <title>/<desc>
+    top_parts: list[str] = []
+    foot_parts: list[str] = []
+    y0, y1 = m, H - 48 * u
     take_parts: list[str] = []
     if spec.get("takeaway"):  # a full-width ink bar that states the conclusion
         bar_h, ts_ = 48 * u, 19 * u
@@ -1027,8 +1894,7 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
         if square:  # taller rows fill the square instead of leaving its lower half empty
             bh = min(ch * 0.8 / n, 190 * u)
         total_h = n * bh
-        titled = bool(spec.get("show_title"))  # under a title it sits high; inline it centres
-        top = y0 + ((ch - total_h) / 2 if square or not titled else min((ch - total_h) / 2, 48 * u))
+        top = y0 + (ch - total_h) / 2
         bw = W - 2 * m
         clip = "ds-stack-clip"
         body.append(
@@ -1102,7 +1968,7 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
         bw, bh = 210 * u, 76 * u
         reach = 56 * u
         if ch < bar_h + 2 * (bh + reach):
-            err("bus hub needs more vertical room — remove the subtitle or footer")
+            err("bus hub needs more vertical room — use fewer items or shorter labels")
             return None
         bar = [
             f'<rect x="{m:.0f}" y="{cy - bar_h / 2:.0f}" width="{W - 2 * m:.0f}" height="{bar_h:.0f}" '
@@ -1159,7 +2025,7 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
         bw, bh = 230 * u, 84 * u
         rx, ry = (W - 2 * m - bw) / 2, (ch - bh) / 2
         if ry < bh * 1.1:
-            err("hub needs more vertical room — remove the subtitle or footer")
+            err("hub needs more vertical room — use fewer items or shorter labels")
             return None
         cw, chh = 240 * u, 104 * u
         ctr = [
@@ -1383,91 +2249,13 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
                 ry += pitch
             body.append(step(i + 1, "node", parts))
     elif arch == "matrix":
-        rows = spec["rows"]
-        n = len(rows)
-        g = 14 * u
-        rh = min(118 * u, (ch - (n - 1) * g) / n)
-        top = y0 + (ch - (n * rh + (n - 1) * g)) / 2
-        hw = 200 * u  # row header width
-        inset = 12 * u
-        for i, row in enumerate(rows):
-            ry = top + i * (rh + g)
-            parts = [
-                f'<rect x="{m:.0f}" y="{ry:.0f}" width="{W - 2 * m:.0f}" height="{rh:.0f}" '
-                f'rx="{st.sh["radius-small"]}" fill="{c["tile"] if c["tile"].upper() not in (c["canvas"].upper(), c["surface"].upper()) else c["subtle"]}"/>',
-                f'<rect x="{m + inset:.0f}" y="{ry + inset:.0f}" width="{hw:.0f}" height="{rh - 2 * inset:.0f}" '
-                f'rx="{st.sh["radius-small"]}" fill="{c["tag"]}"/>',
-            ]
-            hl = fit(row["header"], [int(v * u) for v in (24, 22, 20)], hw - 28 * u, bold=True)
-            if hl is None:
-                err(f"rows[{i}].header does not fit — shorten it")
-                return None
-            parts.append(
-                t(
-                    m + inset + 14 * u,
-                    ry + inset + 14 * u + hl[0],
-                    hl[1],
-                    hl[0],
-                    c["tag-ink"],
-                    weight=st.bold,
-                    lh=1.15,
-                )
-            )
-            cells = row["cells"]
-            k = len(cells)
-            cx0 = m + inset + hw + inset
-            cw = (W - m - inset - cx0 - (k - 1) * inset) / k
-            for j, cell in enumerate(cells):
-                x0 = cx0 + j * (cw + inset)
-                acc = bool(cell.get("accent"))
-                ink = c["accent-ink"] if acc else c["ink"]
-                mut = c["accent-muted"] if acc else c["muted"]
-                parts.append(
-                    f'<rect x="{x0:.0f}" y="{ry + inset:.0f}" width="{cw:.0f}" height="{rh - 2 * inset:.0f}" '
-                    f'rx="{st.sh["radius-small"]}" fill="{c["accent"] if acc else c["surface"]}"'
-                    f"{' data-accent=' + chr(34) + '1' + chr(34) if acc else ''}/>"
-                )
-                cy = ry + inset + 14 * u
-                inner = cw - 28 * u
-                if cell.get("eyebrow"):
-                    ey = wrap(cell["eyebrow"], 15 * u, inner, max_lines=1)
-                    if ey is None:
-                        err(f"rows[{i}].cells[{j}].eyebrow does not fit — shorten it")
-                        return None
-                    cy += 15 * u
-                    parts.append(
-                        t(
-                            x0 + 14 * u,
-                            cy,
-                            ey,
-                            15 * u,
-                            c["accent-ink"] if acc else c["lede"],
-                            weight=500,
-                            track=0.06,
-                        )
-                    )
-                    cy += 6 * u
-                lab = fit(cell["label"], [int(v * u) for v in (21, 20, 18, 17)], inner, bold=True)
-                if lab is None:
-                    err(f"rows[{i}].cells[{j}] {cell['label']!r} does not fit — shorten it")
-                    return None
-                cy += lab[0]
-                parts.append(t(x0 + 14 * u, cy, lab[1], lab[0], ink, weight=st.bold, lh=1.15))
-                cy += (len(lab[1]) - 1) * lab[0] * 1.15
-                if cell.get("detail"):
-                    det = fit(
-                        cell["detail"], [int(v * u) for v in (16, 15, 14)], inner, max_lines=2
-                    )
-                    if det is None:
-                        err(f"rows[{i}].cells[{j}].detail does not fit — shorten it")
-                        return None
-                    cy += det[0] * 1.35
-                    parts.append(t(x0 + 14 * u, cy, det[1], det[0], mut, lh=1.3))
-                    cy += (len(det[1]) - 1) * det[0] * 1.3
-                if cy > ry + rh - inset + 2 * u:
-                    err(f"rows[{i}] is too tall for {n} rows — cut a detail or a row")
-                    return None
-            body.append(step(i + 1, "node", parts))
+        body += matrix_table(spec, st, W, m, y0, y1)
+        if errors:
+            return None
+    elif arch in NEW_ARCHETYPES:
+        body += NEW_ARCHETYPES[arch](spec, st, W, m, y0, y1)
+        if errors:
+            return None
     elif arch == "timeline":
         square = H >= 0.9 * W
         body += (timeline_vertical if square else timeline)(items, st, W, m, y0, y1)
@@ -1502,26 +2290,144 @@ def _build(spec: dict, st: Style, size: tuple[int, int], unit: float) -> str | N
 
 
 SCHEMA = {
-    "archetype": "flow | compare | stack | hub | grid | timeline | matrix",
+    "archetype": "flow | compare | stack | hub | grid | timeline | matrix | cycle | before_after | swimlane | decision | tree | quadrant | metrics | layers",
     "canvas": 'social (1200x627) | square (1080x1080) | wide (1920x1080) | {"w": int, "h": int}',
     "accent": "optional #RRGGBB override of the design system's highlighter; it is a fill behind ink, so it must reach 4.5:1 with accent-ink; exactly one item/column may set accent: true",
     "title": f"required, <= {LIMITS['title']} chars, the one takeaway as a sentence",
     "subtitle": f"optional, <= {LIMITS['subtitle']} chars",
-    "footer": f"optional, <= {LIMITS['footer']} chars (handle, source)",
     "items": f"flow 2-6 | stack 2-5 | hub 3-6 | grid exactly 4 | timeline 3-12: [{{label <= {LIMITS['label']}, detail <= {LIMITS['detail']} (optional; a date on a timeline), icon (optional, flow/grid; see icons.py --list), accent: bool}}]",
     "center": f"hub only, <= {LIMITS['center']} chars",
-    "layout": 'hub only: "radial" (default, centre with spokes) | "bus" (a horizontal bar, stops above and below)',
-    "eyebrow": f"optional, <= {LIMITS['eyebrow']} chars, small uppercase kicker above the title",
+    "layout": 'hub: "radial" (default) | "bus" (a horizontal bar, stops above and below)',
     "numbered": "optional bool, step numbers on cards (default true for flow)",
     "columns": f"compare only, 2-3: [{{heading <= {LIMITS['heading']}, rows: 1-5 strings <= {LIMITS['row']}, accent: bool}}]",
     "axes": "grid only, optional: {x: [left, right], y: [bottom, top]}",
     "takeaway": "optional, <= 80 chars: a full-width ink bar under the diagram stating the conclusion",
     "chips": "per item, optional: up to 3 mono identifier chips (<= 24 chars) on the card",
-    "rows": "matrix only, 2-4: [{header <= 20, cells: 1-4 [{label, detail?, eyebrow? (mono kicker), accent?}]}]",
+    "rows": "matrix only, 2-4: [{header <= 20, cells: 1-4 [{label, detail?, eyebrow? (mono kicker), accent?}]}] — drawn as a ruled table",
+    "cycle / layers": "items like flow: cycle 3-6 stages (last returns to first, optional center); layers 2-5, outermost first",
+    "before_after": "before (heading), after (heading), pairs: 2-6 [{before <= 40, after <= 40, before_detail?, after_detail?, accent?}]",
+    "swimlane": "lanes: 2-4 names <= 24; steps: 3-8 in order [{label <= 26, lane: index or name, detail?, accent?}] — a hand-off drops into the next lane in the same column",
+    "decision": "root: {question <= 50, branches: 2-3 [{label <= 12, to: node}]} ... leaves {answer <= 40, detail?, accent?}; <= 4 levels, <= 7 leaves",
+    "tree": "root: {label <= 26, detail?, accent?, children: <= 5 nodes}; <= 4 levels, <= 7 leaves, <= 15 nodes",
+    "quadrant": "axes {x: [low, high], y: [low, high]}, quadrants? [top-left, top-right, bottom-left, bottom-right], points: 3-10 [{label <= 22, x: 0-1, y: 0-1, accent?}]",
+    "metrics": "kpis? 1-4 [{label, value (string), delta?, accent?}] and/or bars: {items: 2-8 [{label, value (number), display?, accent?}]}",
     "column extras": "compare only, optional per column: badge (1-2 chars, e.g. S/M/L), eyebrow (<= 24 chars) — a tiered comparison",
 }
 
 SAMPLES = {
+    "cycle": {
+        "archetype": "cycle",
+        "title": "Usage data decides which schema fields survive",
+        "center": "schema lifecycle",
+        "items": [
+            {"label": "Propose", "detail": "an RFC per change"},
+            {"label": "Compose", "detail": "registry checks"},
+            {"label": "Ship", "detail": "behind a flag"},
+            {"label": "Measure", "detail": "field usage", "accent": True},
+            {"label": "Retire", "detail": "unused fields"},
+        ],
+    },
+    "before_after": {
+        "archetype": "before_after",
+        "title": "One graph replaces a dozen endpoints per screen",
+        "before": "REST today",
+        "after": "With GraphQL",
+        "pairs": [
+            {"before": "12 requests per screen", "after": "One query per screen", "accent": True},
+            {"before": "Over-fetching on mobile", "after": "Only the fields asked for"},
+            {"before": "Versioned URLs", "after": "Fields deprecated in place"},
+            {"before": "Docs drift from code", "after": "The schema is the contract"},
+        ],
+    },
+    "swimlane": {
+        "archetype": "swimlane",
+        "title": "A schema change ships through the registry",
+        "lanes": ["Subgraph team", "Schema registry", "Gateway"],
+        "steps": [
+            {"label": "Edit schema", "lane": 0},
+            {"label": "Open PR", "lane": 0},
+            {"label": "Composition", "lane": 1},
+            {"label": "Breaking change?", "lane": 1, "accent": True},
+            {"label": "Hot reload", "lane": 2},
+        ],
+    },
+    "decision": {
+        "archetype": "decision",
+        "title": "Federate only when several teams own the data",
+        "root": {
+            "question": "Several teams own data?",
+            "branches": [
+                {
+                    "label": "yes",
+                    "to": {
+                        "question": "One graph for clients?",
+                        "branches": [
+                            {"label": "yes", "to": {"answer": "Federation", "accent": True}},
+                            {"label": "no", "to": {"answer": "Separate APIs"}},
+                        ],
+                    },
+                },
+                {"label": "no", "to": {"answer": "One schema"}},
+            ],
+        },
+    },
+    "tree": {
+        "archetype": "tree",
+        "title": "The platform splits into gateway, subgraphs and tooling",
+        "root": {
+            "label": "GraphQL platform",
+            "children": [
+                {"label": "Gateway", "children": [{"label": "Auth"}, {"label": "Query planner"}]},
+                {
+                    "label": "Subgraphs",
+                    "accent": True,
+                    "children": [{"label": "Products"}, {"label": "Orders"}, {"label": "Search"}],
+                },
+                {"label": "Tooling", "children": [{"label": "Registry"}, {"label": "Tracing"}]},
+            ],
+        },
+    },
+    "quadrant": {
+        "archetype": "quadrant",
+        "title": "DataLoader is the cheapest big win",
+        "axes": {"x": ["Low effort", "High effort"], "y": ["Low impact", "High impact"]},
+        "quadrants": ["Quick wins", "Big bets", "Fill-ins", "Money pits"],
+        "points": [
+            {"label": "DataLoader", "x": 0.2, "y": 0.84, "accent": True},
+            {"label": "Persisted queries", "x": 0.3, "y": 0.6},
+            {"label": "Federation", "x": 0.76, "y": 0.8},
+            {"label": "Field caching", "x": 0.62, "y": 0.42},
+            {"label": "Schema docs", "x": 0.18, "y": 0.22},
+            {"label": "Custom gateway", "x": 0.8, "y": 0.18},
+        ],
+    },
+    "metrics": {
+        "archetype": "metrics",
+        "title": "One query per screen cut p95 latency by more than half",
+        "kpis": [
+            {"label": "p95 latency", "value": "180 ms", "delta": "from 420 ms", "accent": True},
+            {"label": "Requests per screen", "value": "1", "delta": "from 12"},
+            {"label": "Payload", "value": "38 KB", "delta": "-61%"},
+        ],
+        "bars": {
+            "items": [
+                {"label": "Products", "value": 4100, "display": "4.1k req/min"},
+                {"label": "Orders", "value": 2600, "display": "2.6k"},
+                {"label": "Search", "value": 1700, "display": "1.7k"},
+                {"label": "Reviews", "value": 800, "display": "0.8k"},
+            ]
+        },
+    },
+    "layers": {
+        "archetype": "layers",
+        "title": "Every request crosses the gateway boundary",
+        "items": [
+            {"label": "Edge", "detail": "CDN, WAF, rate limits"},
+            {"label": "Gateway", "detail": "auth, persisted queries", "accent": True},
+            {"label": "Subgraphs", "detail": "one team per domain"},
+            {"label": "Data", "detail": "Postgres, search index"},
+        ],
+    },
     "matrix": {
         "archetype": "matrix",
         "title": "Three layers keep a GraphQL API healthy",
@@ -1529,15 +2435,10 @@ SAMPLES = {
             {
                 "header": "Schema",
                 "cells": [
-                    {"label": "SDL first", "eyebrow": "design", "detail": "reviewed like code"},
-                    {
-                        "label": "Federation",
-                        "eyebrow": "subgraphs",
-                        "detail": "one team per domain",
-                    },
+                    {"label": "SDL first", "detail": "reviewed like code"},
+                    {"label": "Federation", "detail": "one team per domain"},
                     {
                         "label": "Persisted queries",
-                        "eyebrow": "allow-list",
                         "detail": "only known operations",
                         "accent": True,
                     },
@@ -1565,7 +2466,6 @@ SAMPLES = {
         "archetype": "flow",
         "title": "One artifact moves through three gates",
         "subtitle": "Build once, promote the same bytes",
-        "footer": "@handle",
         "items": [
             {"label": "Commit", "detail": "main branch only", "icon": "branch"},
             {"label": "Build once", "detail": "immutable image", "icon": "package", "accent": True},
@@ -1682,9 +2582,7 @@ def self_test() -> int:
     errors = []  # inline (no canvas, no drawn title): as tall as the content, not the preset
     inline = build(*validate({k: v for k, v in SAMPLES["flow"].items() if k != "canvas"}, tok))
     ih = float(re.search(r'viewBox="0 0 [\d.]+ ([\d.]+)"', inline).group(1))
-    assert (
-        ih < 600 and "@handle" not in inline and "<title>" in inline and "data-inline" in inline
-    ), ih
+    assert ih < 600 and "<title>" in inline and "data-inline" in inline, ih
     print("OK: self-test passed")
     return 0
 
@@ -1698,9 +2596,6 @@ def main() -> int:
     ap.add_argument("--design-system", default=None, help="design-system.md or tokens .json")
     ap.add_argument("--schema", action="store_true", help="print the spec shape as JSON")
     ap.add_argument("--canvas", choices=sorted(CANVASES), help="override the spec's canvas")
-    ap.add_argument(
-        "--show-title", action="store_true", help="draw the title/subtitle (slides, social cards)"
-    )
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.schema:
@@ -1715,8 +2610,6 @@ def main() -> int:
         spec = json.loads(raw)
         if args.canvas:
             spec["canvas"] = args.canvas
-        if args.show_title:
-            spec["show_title"] = True
         tok = dt.load(args.design_system)
     except (OSError, ValueError, dt.TokenError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

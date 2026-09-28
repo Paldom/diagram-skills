@@ -99,7 +99,7 @@
         "chooses the comparison archetype with three columns and at most 4 rows of short labels per column",
         "every label is specific (for example 'one endpoint, typed schema') rather than generic marketing words",
         "keeps text at or above the minimum font size for the canvas and passes the contrast check",
-        "states the single takeaway as the title (the SVG <title> and alt text; drawn only with show_title for a slide or social card) and nothing else competes with it"
+        "states the single takeaway as the title (the SVG <title> and alt text, never drawn) and nothing else competes with it"
       ]
     },
     {
@@ -141,9 +141,27 @@
       "type": "quality",
       "prompt": "I need an inline figure for my blog post showing how a schema change ships: edit, composition check, breaking-change check, hot reload",
       "expected_behavior": [
-        "compiles a flow without a drawn title (inline default) because the article's heading carries it, while the SVG still has <title> and <desc> with the takeaway",
+        "compiles a flow without a drawn title (figures are always inline) because the article's heading carries it, while the SVG still has <title> and <desc> with the takeaway",
         "hands over the takeaway as alt text / caption for the article",
-        "does not add slide devices (title, takeaway bar, footer handle) unless asked"
+        "does not add slide devices (a drawn title, kicker or footer handle)"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "draw a decision diagram for my article: federate only when several teams own the data and clients need one graph; otherwise separate APIs or one schema",
+      "expected_behavior": [
+        "uses the decision archetype (questions with yes/no branches down to answers), highlighting the recommended answer",
+        "keeps every question and answer from the prompt and adds none",
+        "passes svg_lint with 0 errors and draws no title"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "inline figure: our p95 latency went from 420 ms to 180 ms, requests per screen from 12 to 1, payload down 61%",
+      "expected_behavior": [
+        "uses the metrics archetype with KPI tiles carrying exactly the supplied numbers",
+        "invents no additional metrics or bars",
+        "highlights at most one tile"
       ]
     }
   ]

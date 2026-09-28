@@ -338,7 +338,7 @@ def render(spec: dict, t: dict) -> str:
     c = th.c
     H = spec.get("height", 900)
     m, gap = 64, 104
-    title_h = 90 if spec.get("title") and spec.get("show_title") else 0  # inline by default
+    title_h = 0  # figures are inline: the title is only <title>
     cols = spec["columns"]
     widths, heights = [], []
     for col in cols:
@@ -648,7 +648,6 @@ def main() -> int:
     ap.add_argument("--out", type=Path)
     ap.add_argument("--design-system", default=None)
     ap.add_argument("--sample", action="store_true")
-    ap.add_argument("--show-title", action="store_true", help="draw the title (slides)")
     ap.add_argument(
         "--canvas",
         choices=sorted(dt.CANVASES),
@@ -660,8 +659,6 @@ def main() -> int:
         return self_test()
     try:
         spec = SAMPLE if a.sample else json.loads(a.spec.read_text(encoding="utf-8"))
-        if a.show_title:
-            spec = dict(spec, show_title=True)
         t = dt.load(a.design_system)
     except (OSError, ValueError, AttributeError, dt.TokenError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

@@ -49,11 +49,16 @@ skills execute and the reviewer checks fidelity against.
    work → handoff) — an inferred preference for a prettier engine never
    overrides it. Relations with labeled, directed edges between more than three
    entities need Mermaid for Markdown destinations and the architecture
-   compiler for visual ones. A type the repo does not draw (swimlane, org
-   chart, Venn, funnel, charts, Gantt, Sankey, …) goes to diagram-design with
-   the theme exported by `to_diagram_design.py` — never bent into a near
-   archetype. Record the diagram type or illustration archetype
-   (flow, stack, hub, grid, compare, timeline, architecture), the canvas, the
+   compiler for visual ones. Choose the type **relation first** (the router's
+   "Relation → diagram type" table): name the relation the takeaway states,
+   pick the native archetype, Mermaid form or delegate for it, and write down
+   the runner-up and why it lost — `flow` and `compare` need an explicit order
+   or alternatives. A type the repo does not draw (funnel, Gantt, Sankey,
+   Venn, charts of real data, big org charts, …) goes to diagram-design with
+   the theme exported by `to_diagram_design.py`, never bent into a near
+   archetype. Record the type (cycle, before_after, decision, swimlane, tree,
+   layers, quadrant, metrics, flow, stack, hub, grid, compare, matrix,
+   timeline, architecture, pipeline, a Mermaid type, or the delegate), the canvas, the
    design system (a `design-system.md` path, or the default), whether it should
    also be animated, and the skill.
 6. **Name external tooling only when it adds something** the repo's skills do
@@ -80,7 +85,8 @@ Audience: <who>  ·  Destination: <README | docs | PR | article | LinkedIn/X | s
 
 ## Format
 Medium: <Mermaid <type> | SVG illustration <archetype | architecture>, <social 1200×627 | square 1080×1080 | wide 1920×1080> | handoff <tool>>
-Why: <one line from the router>
+Why: <the relation the takeaway states, and the router row it picks>
+Runner-up: <the second candidate type, and why it lost>
 Draw with: <mermaid-draw | illustration-draw | diagram-design | archify | drawio-skill | /design | figma-generate-diagram>
 Design system: <path to design-system.md, or "default (Studio)">
 Motion: <none | reveal | pipeline pan> → diagram-animate after review

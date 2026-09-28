@@ -50,18 +50,23 @@ inside one fixed budget.
    otherwise write a 5-line quick brief (takeaway, audience, destination,
    entities, archetype) to `diagram-design/<slug>/brief.md`. Never draw without
    a stated takeaway.
-2. **Choose** the archetype by the idea's shape — `flow` (steps), `stack`
-   (layers), `hub` (one center, satellites), `grid` (2×2 tradeoff), `compare`
-   (2–3 options), `timeline` (3–12 dated milestones on one left-to-right
-   track; solid up to the highlight, dashed after) — or an
+2. **Choose** the archetype by the relation in the takeaway, not its nouns —
+   `flow` (strict order), `cycle` (it loops back), `before_after` (a change of
+   state), `decision` (if/otherwise), `tree` (breaks down into), `swimlane`
+   (hand-offs between actors), `layers` (contains / runs inside), `stack`
+   (tiers), `hub` (one center), `compare` (2–3 options), `matrix` (groups ×
+   items, a ruled table), `grid` (exactly 2×2), `quadrant` (3–10 items placed
+   on two axes), `timeline` (dated milestones), `metrics` (the numbers are the
+   point: KPI tiles, ranked bars) — see `references/spec-options.md`. A type
+   none of these draws goes to `mermaid-draw` or diagram-design (routing in
+   `diagram-brief`), never into a near archetype. Or an
    **architecture** spec when the takeaway needs systems, boundaries and an
    ordered flow between them (`arch_svg.py --sample` prints a working one).
    Pick the canvas (`social` 1200×627 for LinkedIn/X/OG, `square` 1080×1080,
    `wide` 1920×1080 for slides — or `--canvas` to override; `{"w","h"}` for a
    wide panorama to camera-pan; `arch_svg.py`/`pipeline_svg.py --canvas` fit a
-   finished diagram and warn under 12 px). Figures are inline by default: the
-   title is the SVG `<title>`/alt text, not drawn — add `--show-title` for a
-   slide or social card. Pick an `icon` per card from `icons.py --list` (35
+   finished diagram and warn under 12 px). Figures are always inline: the title
+   is the SVG `<title>`/alt text, never drawn. Pick an `icon` per card from `icons.py --list` (35
    outline icons, line or isometric-line by the design system). Read
    `references/style-rules.md` once per session; it is what the drawer and the
    reviewer both follow. If the brief's

@@ -141,6 +141,41 @@
     {
       "type": "should_trigger",
       "prompt": "which skill should draw an org chart of our platform team in our house theme?"
+    },
+    {
+      "type": "quality",
+      "prompt": "brief a figure for my post: every schema change goes propose, compose, ship, measure usage, retire unused fields, and then the next change starts from what we measured",
+      "expected_behavior": [
+        "names the relation as a loop (the last step feeds the first) and picks the native cycle archetype, not flow",
+        "names a runner-up (flow) and says why it lost (the return to the start is the point)",
+        "routes to illustration-draw with a cycle spec of 5 stages and one highlighted stage"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "brief an inline diagram: we went from 12 REST calls per screen to one GraphQL query, versioned URLs became deprecations in place, docs drift became schema-as-contract",
+      "expected_behavior": [
+        "names the relation as a change of state and picks before_after with aligned pairs, not compare",
+        "records the runner-up (compare) and why it lost (the pairs map old to new)",
+        "routes to illustration-draw"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "what should draw our signup funnel: 10k visitors, 2.1k signups, 640 activated, 180 paying - for the blog",
+      "expected_behavior": [
+        "names the relation as reduction by stage and delegates to diagram-design (funnel), exporting the theme with to_diagram_design.py and asking before it writes the profile",
+        "does not force the numbers into flow or metrics bars",
+        "keeps the numbers exactly as given"
+      ]
+    },
+    {
+      "type": "quality",
+      "prompt": "brief a diagram of how the checkout service talks to payments and the ledger, message by message, for our docs README",
+      "expected_behavior": [
+        "names the relation as messages between parties over time and routes to mermaid-draw with a sequenceDiagram (Markdown destination)",
+        "does not pick a native card archetype for it"
+      ]
     }
   ]
 }

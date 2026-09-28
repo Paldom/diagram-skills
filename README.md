@@ -12,9 +12,8 @@ Agent skills that turn a title, a few notes, or a hot take into a minimalist tec
 
 ## Gallery
 
-Figures are **inline by default**: no drawn title, so they sit under your article's
-own heading (the takeaway becomes the SVG `<title>` and your alt text). Add
-`--show-title` for a slide or a social card. Each image below was compiled from a
+Figures are **inline**: no drawn title, so they sit under your article's own
+heading (the takeaway becomes the SVG `<title>` and your alt text). Each image below was compiled from a
 short JSON spec. The theme shown is the one that suits that diagram best; any of the
 [six themes](#themes) works.
 
@@ -33,7 +32,7 @@ short JSON spec. The theme shown is the one that suits that diagram best; any of
 
 <table>
   <tr>
-    <td width="50%"><img src="assets/examples/flow-coral.png" alt="Flow card, coral: Commit, Build once (navy highlight), Deploy, joined by disc arrows with square step badges"/><br/><sub><b>flow</b>: steps in order</sub></td>
+    <td width="50%"><img src="assets/examples/flow-coral.png" alt="Flow card, coral: Commit, Build once (navy highlight), Deploy, flat hairline cards with red square step numbers and plain arrows"/><br/><sub><b>flow</b>: steps in order</sub></td>
     <td width="50%"><img src="assets/examples/compare-coral.png" alt="Compare card, coral: REST, GraphQL (navy highlight) and gRPC columns with three short properties each"/><br/><sub><b>compare</b>: 2-3 options side by side</sub></td>
   </tr>
   <tr>
@@ -44,7 +43,31 @@ short JSON spec. The theme shown is the one that suits that diagram best; any of
   </tr>
   <tr>
     <td width="50%"><img src="assets/examples/grid-studio.png" alt="2x2 grid, studio: Postgres highlighted in the complex-queries, low-write-volume quadrant; Kafka plus views, SQLite, Cassandra in the others"/><br/><sub><b>grid</b>: a 2×2 trade-off</sub></td>
-    <td width="50%"><sub>Also: <b>stack</b> (layers), <b>hub</b> (center + satellites), <b>hub-bus</b>, <b>matrix</b>, and slide variants with chips and a takeaway bar. See <a href="skills/illustration-draw/">illustration-draw</a>.</sub></td>
+    <td width="50%"><sub>Also: <b>stack</b> (layers), <b>hub</b> (center + satellites), <b>hub-bus</b>, <b>matrix</b> (a ruled table), and variants with chips and a takeaway bar. See <a href="skills/illustration-draw/">illustration-draw</a>.</sub></td>
+  </tr>
+</table>
+
+### More diagram types
+
+Chosen by the relation the takeaway states, not by habit: a loop, a change, a
+hand-off, a branch, a hierarchy, a position, a number, a boundary.
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/examples/type-cycle-coral.png" alt="Cycle, coral: Propose, Compose, Ship, Measure (highlighted), Retire on an ellipse joined clockwise by arrows around 'schema lifecycle'"/><br/><sub><b>cycle</b>: the last step feeds the first</sub></td>
+    <td width="50%"><img src="assets/examples/type-before_after-coral.png" alt="Before and after, coral: REST today versus With GraphQL in four aligned pairs, 12 requests per screen becomes one query per screen (highlighted)"/><br/><sub><b>before_after</b>: old → new, pair by pair</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/examples/type-swimlane-coral.png" alt="Swimlane, coral: Subgraph team edits the schema and opens a PR, Schema registry runs composition and the breaking-change check (highlighted), Gateway hot-reloads"/><br/><sub><b>swimlane</b>: hand-offs between actors</sub></td>
+    <td width="50%"><img src="assets/examples/type-decision-coral.png" alt="Decision tree, coral: Several teams own data? yes leads to One graph for clients? yes Federation (highlighted), no Separate APIs; no leads to One schema"/><br/><sub><b>decision</b>: if / otherwise, down to answers</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/examples/type-tree-coral.png" alt="Tree, coral: GraphQL platform splits into Gateway (Auth, Query planner), Subgraphs (highlighted: Products, Orders, Search) and Tooling (Registry, Tracing)"/><br/><sub><b>tree</b>: breaks down into</sub></td>
+    <td width="50%"><img src="assets/examples/type-quadrant-coral.png" alt="Quadrant, coral: six practices placed by effort and impact; DataLoader highlighted among the quick wins"/><br/><sub><b>quadrant</b>: points on two axes</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/examples/type-metrics-coral.png" alt="Metrics, coral: KPI tiles p95 latency 180 ms from 420 ms (highlighted), 1 request per screen from 12, payload 38 KB -61%, over ranked bars of requests per subgraph"/><br/><sub><b>metrics</b>: when the numbers are the point</sub></td>
+    <td width="50%"><img src="assets/examples/type-layers-coral.png" alt="Layers, coral: nested boundaries Edge, Gateway (highlighted band), Subgraphs, and Data at the core"/><br/><sub><b>layers</b>: runs inside, wraps</sub></td>
   </tr>
 </table>
 
@@ -219,7 +242,7 @@ changes from Studio.
 | `studio` (default) | cool grey canvas, white borderless cards, outline icons in tiles, a subtle neumorphic lift | pale-yellow card behind dark ink |
 | `studio-ink` | Studio, six lines long — the smallest custom-theme example | ink card, white text |
 | `paper-line` | warm paper, hairline borders, curved connectors, isometric line icons, flat | ink-inverted card (black, paper text) |
-| `coral` | the slide language: navy type, red lede, square white cards with a soft shadow, coral row headers, square badges, disc arrows, mono labels | navy card, white text |
+| `coral` | editorial red-line: white page, flat square cards with a hairline, red step numbers, icons and bullets, plain arrows, mono labels | navy card, white text |
 | `coral-blocks` | solid salmon blocks in a peach group, navy connectors, red step badges | navy card, white text |
 | `midnight` | near-black canvas, slate cards with hairlines, flat | periwinkle card, dark text |
 
