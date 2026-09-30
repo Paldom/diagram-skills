@@ -28,11 +28,13 @@ Shipped: `studio` (`assets/design-system.md` — cool grey canvas, white
 borderless cards, outline icons in tiles, pale-yellow highlight card, soft
 lift), and in `assets/themes/`: `studio-ink` (Studio with an ink highlight —
 the six-line custom-theme example), `paper-line` (warm paper, hairlines,
-isometric icons, ink-inverted highlight), `coral` (the slide language: navy
-type, red lede, square white cards with a soft shadow, warm-grey bands, coral
-row headers, square badges, disc arrows, mono labels, coral icons, one navy
-highlight), `coral-blocks` (solid salmon blocks in a peach group, navy
-highlight), `midnight` (dark, hairline cards, periwinkle highlight). Every
+isometric icons, ink-inverted highlight), `coral` (editorial red-line: navy
+type, flat square white cards with a hairline, red step numbers, icons and
+bullets, plain arrows, mono labels, one navy highlight), `coral-blocks` (solid salmon blocks in a peach group, navy
+highlight), `midnight` (dark, hairline cards, periwinkle highlight), `wave`
+(warm near-white page, soft grey borderless cards, dark green ink, mono labels,
+bright green highlight card) and `wave-light` (pale periwinkle page, white
+rounded cards on a soft shadow, lavender groups, indigo highlight card). Every
 token is documented in `references/token-schema.md`.
 
 ## When NOT to use

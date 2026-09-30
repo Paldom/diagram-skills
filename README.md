@@ -234,7 +234,7 @@ same design system.
 
 ## Themes
 
-Six themes ship; each is one short Markdown file that lists only what it
+Eight themes ship; each is one short Markdown file that lists only what it
 changes from Studio.
 
 | Theme | Look | Highlight |
@@ -245,9 +245,35 @@ changes from Studio.
 | `coral` | editorial red-line: white page, flat square cards with a hairline, red step numbers, icons and bullets, plain arrows, mono labels | navy card, white text |
 | `coral-blocks` | solid salmon blocks in a peach group, navy connectors, red step badges | navy card, white text |
 | `midnight` | near-black canvas, slate cards with hairlines, flat | periwinkle card, dark text |
+| `wave` | warm near-white page, soft grey borderless cards, very dark green ink, mono step numbers, flat | bright green card, dark green text |
+| `wave-light` | pale periwinkle page, white 20 px cards on a soft indigo shadow, lavender groups, sky-blue pills | deep indigo card, white text |
 
 <p align="center">
-  <img src="assets/examples/themes.png" alt="The same flow card in all six themes: studio (yellow highlight), studio-ink (ink card), paper-line (black card), coral (navy card, red badges), coral-blocks (salmon blocks), midnight (periwinkle card on near-black)" width="100%"/>
+  <img src="assets/examples/themes.png" alt="The same flow card in all eight themes: studio (yellow highlight), studio-ink (ink card), paper-line (black card), coral (navy card, red badges), coral-blocks (salmon blocks), midnight (periwinkle card on near-black), wave (bright green card on a near-white page), wave-light (indigo card on periwinkle)" width="100%"/>
+</p>
+
+The v8 diagram types in every theme (cycle, decision, metrics; rows of four:
+studio, studio-ink, paper-line, coral / coral-blocks, midnight, wave, wave-light):
+
+<p align="center">
+  <img src="assets/examples/types-themes.png" alt="Cycle, decision tree and metrics diagrams, each rendered in all eight themes: studio with a yellow highlight, studio-ink and paper-line with dark highlights, coral with a navy highlight and red numbers, coral-blocks in salmon, midnight in periwinkle on near-black, wave in bright green, wave-light in indigo" width="100%"/>
+</p>
+
+### The newest themes: wave and wave-light
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/examples/graph-platform-wave.png" alt="Layered architecture, wave theme: user, client app and auth feed a GraphQL gateway highlighted in bright green, which resolves to Orders and Products subgraphs and their data sources, with numbered steps and a legend"/><br/><sub>Architecture in <code>wave</code>: soft grey cards, one bright green highlight</sub></td>
+    <td width="50%"><img src="assets/examples/metrics-wave.png" alt="Metrics, wave theme: p95 latency 180 ms from 420 ms highlighted in bright green, requests per screen and payload tiles, over ranked bars of requests per subgraph"/><br/><sub>Metrics in <code>wave</code>: mono labels, dark green bars</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/examples/cycle-wave-light.png" alt="Cycle, wave-light theme: propose, compose, ship, measure (highlighted indigo card) and retire around a schema lifecycle, white cards on a pale periwinkle page"/><br/><sub>Cycle in <code>wave-light</code>: white cards lifted on periwinkle</sub></td>
+    <td width="50%"><img src="assets/examples/layers-wave-light.png" alt="Layers, wave-light theme: nested boundaries Edge, Gateway as an indigo band, Subgraphs and Data in pale lavender panels"/><br/><sub>Layers in <code>wave-light</code>: lavender groups, one indigo band</sub></td>
+  </tr>
+</table>
+<p align="center">
+  <img src="assets/examples/hub-bus-wave-light.gif" alt="Reveal animation, wave-light theme: services appear around an event bus in reading order, connectors draw, the indigo Billing card lands last" width="60%"/>
+  <br/><sub>The reveal animation in <code>wave-light</code>.</sub>
 </p>
 
 Pick one by name anywhere a design system is accepted — `--design-system coral`,

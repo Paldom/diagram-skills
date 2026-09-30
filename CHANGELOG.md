@@ -7,6 +7,30 @@ versioning: [SemVer](https://semver.org) on the plugin manifest
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-30
+
+Two new themes, `wave` and `wave-light`, and a Themes section that shows the
+new diagram types in every theme.
+
+### Added
+
+- **diagram-design-system:** two new shipped themes. `wave` — a warm near-white
+  page, soft grey borderless cards, very dark green ink, mono step numbers and
+  one bright green highlight card (fill only; the lint keeps it off text).
+  `wave-light` — a pale periwinkle page, white 20 px cards on a soft indigo
+  shadow, lavender groups, sky-blue pills and a deep indigo highlight card.
+  Both pass the WCAG 4.5:1 token checks and render every archetype,
+  architecture, the pipeline explainer and the animations.
+- **README:** the Themes section shows the flow card in all eight themes, the
+  v8 diagram types (cycle, decision, metrics) in every theme, and a wave /
+  wave-light showcase (architecture, metrics, cycle, layers and a reveal
+  animation).
+
+### Fixed
+
+- `diagram-design-system` described `coral` with the pre-v8 look (soft shadow,
+  disc arrows); it now describes the red-line theme.
+
 ## [0.3.0] - 2026-09-29
 
 Eight relation-first diagram types, relation-first routing with delegation to

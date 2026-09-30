@@ -16,7 +16,8 @@ Tiered comparisons: per column `badge` (S/M/L) and `eyebrow` ("Ships in
 days"). `matrix` is a ruled table: 2–4 `rows`, each a `header` and 1–4
 `cells` (`label`, `detail`, one `accent` fill; no card chrome). The highlight
 is whatever the design system says: a yellow card in Studio, an inverted card
-in paper-line, coral and studio-ink.
+in paper-line, coral and studio-ink, a bright green card in wave, an indigo card
+in wave-light.
 
 ## Relation-first archetypes (v8)
 

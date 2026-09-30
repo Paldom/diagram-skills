@@ -164,7 +164,7 @@ sans `{ty["sans"]}`; mono `{ty["mono"]}`; serif `{ty["serif"]}`.
 
 
 def self_test() -> int:
-    for name in ("studio", "coral", "paper-line", "midnight"):
+    for name in ("studio", "coral", "paper-line", "midnight", "wave", "wave-light"):
         t = dt.load(name)
         p = profile(t, f"ds-{name}", "2026-01-01")
         r = roles(t)
